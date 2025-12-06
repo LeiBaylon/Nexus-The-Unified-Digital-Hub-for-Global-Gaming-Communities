@@ -1,0 +1,8 @@
+{
+  "name": "Nexus - The Ultimate Gamer Chat",
+  "description": "A next-gen instant messaging platform built for gamers, featuring AI-powered strategy assistance, high-fidelity UI, and seamless communication channels.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
