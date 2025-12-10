@@ -1,13 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ServerSidebar, ChannelSidebar } from './Sidebars';
 import { ChatInterface } from './ChatInterface';
 import { GamingHub } from './GamingHub';
 import Profile from './Profile';
 import { Modal, Button, Badge, Input, Switch, Keycap, RadioCard } from './UIComponents';
-import { MOCK_SERVERS, MOCK_USERS, INITIAL_MESSAGES, LOOT_ITEMS } from '../constants';
+import { MOCK_SERVERS, MOCK_USERS, INITIAL_MESSAGES, LOOT_ITEMS, NOTIFICATION_SOUNDS } from '../constants';
 import { User, Message, SoundEffect, InventoryItem, Server } from '../types';
-import { Gift, Shield, User as UserIcon, Keyboard, Palette, LogOut, Check, Plus, UploadCloud, Monitor, RefreshCw, X } from 'lucide-react';
+import { Gift, Shield, User as UserIcon, Keyboard, Palette, LogOut, Check, Plus, UploadCloud, Monitor, RefreshCw, X, Volume2 } from 'lucide-react';
 
 interface DashboardProps {
   currentUser: User;
@@ -20,7 +20,10 @@ const DEFAULT_PREFERENCES = {
   density: 'comfortable',
   reducedMotion: false,
   streamerMode: false,
-  devMode: false
+  devMode: false,
+  enableSounds: true,
+  enableMentionSounds: true,
+  notificationVolume: 0.5
 };
 
 const DEFAULT_KEYBINDS = [
@@ -42,7 +45,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
   
   // Modals & Overlays
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'PROFILE' | 'APPEARANCE' | 'KEYBINDS'>('PROFILE');
+  const [settingsTab, setSettingsTab] = useState<'PROFILE' | 'APPEARANCE' | 'KEYBINDS' | 'AUDIO'>('PROFILE');
   
   const [isLootModalOpen, setIsLootModalOpen] = useState(false);
   const [isCreateServerOpen, setIsCreateServerOpen] = useState(false);
@@ -60,6 +63,37 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
   // Loot State
   const [openingLoot, setOpeningLoot] = useState(false);
   const [lootResult, setLootResult] = useState<InventoryItem | null>(null);
+
+  // Sound Effect Logic
+  const isMounted = useRef(false);
+
+  useEffect(() => {
+    // Skip sound on initial mount
+    if (!isMounted.current) {
+        isMounted.current = true;
+        return;
+    }
+    
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.senderId === currentUser.id) return;
+
+    // Determine sound
+    let soundSrc = null;
+    const isMention = lastMsg.content.includes(`@${currentUser.username}`) || lastMsg.content.toLowerCase().includes('@everyone');
+
+    if (isMention && preferences.enableMentionSounds) {
+        soundSrc = NOTIFICATION_SOUNDS.MENTION;
+    } else if (preferences.enableSounds && !lastMsg.isSystem) {
+        soundSrc = NOTIFICATION_SOUNDS.MESSAGE;
+    }
+
+    if (soundSrc) {
+        const audio = new Audio(soundSrc);
+        audio.volume = preferences.notificationVolume;
+        audio.play().catch(err => console.error("Error playing notification:", err));
+    }
+
+  }, [messages, currentUser.id, currentUser.username, preferences]);
 
   const activeServer = servers.find(s => s.id === activeServerId);
   const activeChannel = activeServer?.channels.find(c => c.id === activeChannelId) || {
@@ -120,7 +154,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
      // Play Audio
      try {
         const audio = new Audio(sound.src);
-        audio.volume = 0.5;
+        audio.volume = preferences.notificationVolume; // Use setting volume
         audio.play().catch(e => console.error("Failed to play sound:", e));
      } catch(e) {
         console.error("Audio error", e);
@@ -374,6 +408,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                   <Palette size={16} /> Appearance
                </button>
                <button 
+                  onClick={() => setSettingsTab('AUDIO')} 
+                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'AUDIO' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'}`}
+               >
+                  <Volume2 size={16} /> Audio & Notifications
+               </button>
+               <button 
                   onClick={() => setSettingsTab('KEYBINDS')} 
                   className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'KEYBINDS' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'}`}
                >
@@ -461,6 +501,42 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                            checked={preferences.devMode} 
                            onChange={(v: boolean) => setPreferences(p => ({...p, devMode: v}))} 
                         />
+                     </div>
+                  </div>
+               )}
+
+               {settingsTab === 'AUDIO' && (
+                  <div className="space-y-6 animate-fade-in">
+                     <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Sound Settings</h3>
+                     
+                     <div className="space-y-4">
+                        <Switch 
+                           label="Message Sounds" 
+                           checked={preferences.enableSounds} 
+                           onChange={(v: boolean) => setPreferences(p => ({...p, enableSounds: v}))} 
+                        />
+                        <Switch 
+                           label="Mention Sounds (@username)" 
+                           checked={preferences.enableMentionSounds} 
+                           onChange={(v: boolean) => setPreferences(p => ({...p, enableMentionSounds: v}))} 
+                        />
+                        
+                        <div className="pt-4">
+                           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Notification Volume</label>
+                           <input 
+                              type="range" 
+                              min="0" 
+                              max="1" 
+                              step="0.1" 
+                              value={preferences.notificationVolume}
+                              onChange={(e) => setPreferences(p => ({...p, notificationVolume: parseFloat(e.target.value)}))}
+                              className="w-full accent-nexus-accent h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                           />
+                           <div className="flex justify-between text-xs text-slate-400 mt-1">
+                              <span>Silent</span>
+                              <span>{(preferences.notificationVolume * 100).toFixed(0)}%</span>
+                           </div>
+                        </div>
                      </div>
                   </div>
                )}

@@ -112,6 +112,11 @@ export const SOUND_EFFECTS: SoundEffect[] = [
   { id: 's4', label: 'Level Up', icon: Trophy, color: 'text-nexus-accent', src: 'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3' },
 ];
 
+export const NOTIFICATION_SOUNDS = {
+  MESSAGE: 'https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3', // Simple pop
+  MENTION: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'  // Distinct chime
+};
+
 export const LOOT_ITEMS: InventoryItem[] = [
   { id: 'b1', name: 'Veteran Badge', type: 'BADGE', rarity: 'COMMON', icon: Sparkles },
   { id: 'b2', name: 'Neon Theme', type: 'THEME', rarity: 'RARE', icon: Ghost },
