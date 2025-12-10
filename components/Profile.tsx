@@ -2,19 +2,21 @@
 import React, { useState } from 'react';
 import { User, UserStatus } from '../types';
 import { Avatar, Button, Input, Tabs, Badge, ProgressBar } from './UIComponents';
-import { Edit2, Twitch, Twitter, MessageSquare, Gamepad2, Trophy, Clock, Target, Shield, Save } from 'lucide-react';
+import { Edit2, Twitch, Twitter, MessageSquare, Gamepad2, Trophy, Clock, Target, Shield, Save, Monitor, Cpu, HardDrive, CheckCircle, UserPlus, Send, History, Lock } from 'lucide-react';
 
 interface ProfileProps {
   user: User;
   isCurrentUser: boolean;
   onUpdate?: (updatedUser: User) => void;
   onClose?: () => void;
+  onMessageUser?: (userId: string) => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onUpdate, onClose }) => {
+const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onUpdate, onClose, onMessageUser }) => {
   const [user, setUser] = useState(initialUser);
   const [activeTab, setActiveTab] = useState('Overview');
   const [isEditing, setIsEditing] = useState(false);
+  const [friendStatus, setFriendStatus] = useState<'NONE' | 'SENT' | 'FRIENDS'>('NONE');
   
   // Edit State
   const [editForm, setEditForm] = useState({
@@ -41,6 +43,15 @@ const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onU
     setUser(updatedUser);
     onUpdate?.(updatedUser);
     setIsEditing(false);
+  };
+
+  const handleAddFriend = () => {
+    if (friendStatus === 'NONE') setFriendStatus('SENT');
+  };
+
+  const handleMessageClick = () => {
+    onClose?.(); // Ensure modal is closed
+    onMessageUser?.(user.id);
   };
 
   return (
@@ -87,8 +98,23 @@ const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onU
           <div className="flex gap-2 mb-2">
              {!isCurrentUser && (
                 <>
-                  <Button variant="primary" className="py-2 px-4 text-sm">Add Friend</Button>
-                  <Button variant="secondary" className="py-2 px-4 text-sm">Message</Button>
+                  <Button 
+                    variant={friendStatus === 'NONE' ? "primary" : "secondary"} 
+                    className="py-2 px-4 text-sm"
+                    onClick={handleAddFriend}
+                    disabled={friendStatus !== 'NONE'}
+                  >
+                    {friendStatus === 'NONE' && <><UserPlus size={16} /> Add Friend</>}
+                    {friendStatus === 'SENT' && <><CheckCircle size={16} /> Sent</>}
+                    {friendStatus === 'FRIENDS' && <><CheckCircle size={16} /> Friends</>}
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    className="py-2 px-4 text-sm"
+                    onClick={handleMessageClick}
+                  >
+                    <Send size={16} /> Message
+                  </Button>
                 </>
              )}
           </div>
@@ -150,17 +176,38 @@ const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onU
                        </div>
                        
                        <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700/50">
+                          <h3 className="text-lg font-bold text-white mb-4">Specs</h3>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="p-3 bg-slate-800 rounded-lg flex flex-col items-center text-center hover:bg-slate-750 transition-colors group">
+                                <Cpu size={24} className="text-nexus-glow mb-2 group-hover:scale-110 transition-transform" />
+                                <div className="text-xs font-bold text-slate-400 uppercase">CPU</div>
+                                <div className="font-bold">Intel i9-13900K</div>
+                            </div>
+                            <div className="p-3 bg-slate-800 rounded-lg flex flex-col items-center text-center hover:bg-slate-750 transition-colors group">
+                                <Monitor size={24} className="text-nexus-glow mb-2 group-hover:scale-110 transition-transform" />
+                                <div className="text-xs font-bold text-slate-400 uppercase">GPU</div>
+                                <div className="font-bold">RTX 4090</div>
+                            </div>
+                            <div className="p-3 bg-slate-800 rounded-lg flex flex-col items-center text-center hover:bg-slate-750 transition-colors group">
+                                <HardDrive size={24} className="text-nexus-glow mb-2 group-hover:scale-110 transition-transform" />
+                                <div className="text-xs font-bold text-slate-400 uppercase">RAM</div>
+                                <div className="font-bold">64GB DDR5</div>
+                            </div>
+                          </div>
+                       </div>
+
+                       <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700/50">
                           <h3 className="text-lg font-bold text-white mb-4">Connected Accounts</h3>
                           <div className="flex flex-wrap gap-4">
                              {user.socials?.twitch && (
-                                <div className="flex items-center gap-2 bg-[#9146FF]/10 text-[#9146FF] px-4 py-2 rounded border border-[#9146FF]/20">
+                                <a href="#" className="flex items-center gap-2 bg-[#9146FF]/10 text-[#9146FF] px-4 py-2 rounded border border-[#9146FF]/20 hover:bg-[#9146FF]/20 transition-colors">
                                    <Twitch size={18} /> <span className="font-bold">{user.socials.twitch}</span>
-                                </div>
+                                </a>
                              )}
                              {user.socials?.steam && (
-                                <div className="flex items-center gap-2 bg-slate-700/30 text-slate-300 px-4 py-2 rounded border border-slate-600">
+                                <a href="#" className="flex items-center gap-2 bg-slate-700/30 text-slate-300 px-4 py-2 rounded border border-slate-600 hover:bg-slate-700/50 transition-colors">
                                    <Gamepad2 size={18} /> <span className="font-bold">{user.socials.steam}</span>
-                                </div>
+                                </a>
                              )}
                              {user.socials?.discord && (
                                 <div className="flex items-center gap-2 bg-[#5865F2]/10 text-[#5865F2] px-4 py-2 rounded border border-[#5865F2]/20">
@@ -199,55 +246,120 @@ const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onU
                )}
 
                {activeTab === 'Stats' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     {user.stats && user.stats.length > 0 ? (
-                        user.stats.map((stat, idx) => (
-                           <div key={idx} className="bg-slate-900/50 border border-slate-700 rounded-xl p-6 hover:border-nexus-accent transition-colors">
-                              <div className="flex justify-between items-start mb-4">
-                                 <div>
-                                    <h4 className="font-bold text-xl text-white">{stat.game}</h4>
-                                    <div className="text-nexus-glow font-bold text-sm">{stat.role}</div>
-                                 </div>
-                                 <Badge color="bg-slate-800">{stat.rank}</Badge>
+                  <div className="space-y-6 animate-fade-in">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {user.stats && user.stats.length > 0 ? (
+                            user.stats.map((stat, idx) => (
+                              <div key={idx} className="bg-slate-900/50 border border-slate-700 rounded-xl p-6 hover:border-nexus-accent transition-colors">
+                                  <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h4 className="font-bold text-xl text-white">{stat.game}</h4>
+                                        <div className="text-nexus-glow font-bold text-sm">{stat.role}</div>
+                                    </div>
+                                    <Badge color="bg-slate-800">{stat.rank}</Badge>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-4 mt-4 text-center">
+                                    <div className="p-3 bg-slate-800 rounded">
+                                        <div className="text-xs text-slate-400 uppercase">Win Rate</div>
+                                        <div className="text-lg font-bold text-green-400">{stat.winRate}</div>
+                                    </div>
+                                    <div className="p-3 bg-slate-800 rounded">
+                                        <div className="text-xs text-slate-400 uppercase">Matches</div>
+                                        <div className="text-lg font-bold text-white">{stat.matches}</div>
+                                    </div>
+                                    <div className="p-3 bg-slate-800 rounded">
+                                        <div className="text-xs text-slate-400 uppercase">Skill</div>
+                                        <div className="text-lg font-bold text-yellow-400">S+</div>
+                                    </div>
+                                  </div>
                               </div>
-                              <div className="grid grid-cols-3 gap-4 mt-4 text-center">
-                                 <div className="p-3 bg-slate-800 rounded">
-                                    <div className="text-xs text-slate-400 uppercase">Win Rate</div>
-                                    <div className="text-lg font-bold text-green-400">{stat.winRate}</div>
+                            ))
+                        ) : (
+                            <div className="col-span-2 text-center py-20 text-slate-500">
+                              <Gamepad2 size={48} className="mx-auto mb-4 opacity-50" />
+                              <p>No game stats recorded yet.</p>
+                            </div>
+                        )}
+                     </div>
+
+                     <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-6">
+                        <div className="flex items-center gap-3 mb-6">
+                            <History className="text-nexus-accent" />
+                            <h3 className="text-lg font-bold text-white">Recent Match History</h3>
+                        </div>
+                        <div className="space-y-2">
+                           <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg hover:bg-slate-750 transition-colors border-l-4 border-green-500 group">
+                              <div className="flex items-center gap-4">
+                                 <div className="font-bold text-green-500 uppercase text-sm w-16 bg-green-500/10 py-1 text-center rounded">Victory</div>
+                                 <div>
+                                    <div className="font-bold text-white group-hover:text-nexus-accent transition-colors">League of Legends</div>
+                                    <div className="text-xs text-slate-400">Ranked Solo/Duo • Summoner's Rift • <span className="text-slate-300">12/3/18 KDA</span></div>
                                  </div>
-                                 <div className="p-3 bg-slate-800 rounded">
-                                    <div className="text-xs text-slate-400 uppercase">Matches</div>
-                                    <div className="text-lg font-bold text-white">{stat.matches}</div>
-                                 </div>
-                                 <div className="p-3 bg-slate-800 rounded">
-                                    <div className="text-xs text-slate-400 uppercase">Skill</div>
-                                    <div className="text-lg font-bold text-yellow-400">S+</div>
-                                 </div>
+                              </div>
+                              <div className="text-right">
+                                 <div className="font-bold text-white">+18 LP</div>
+                                 <div className="text-xs text-slate-400">2h ago</div>
                               </div>
                            </div>
-                        ))
-                     ) : (
-                        <div className="col-span-2 text-center py-20 text-slate-500">
-                           <Gamepad2 size={48} className="mx-auto mb-4 opacity-50" />
-                           <p>No game stats recorded yet.</p>
+                           <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg hover:bg-slate-750 transition-colors border-l-4 border-red-500 group">
+                              <div className="flex items-center gap-4">
+                                 <div className="font-bold text-red-500 uppercase text-sm w-16 bg-red-500/10 py-1 text-center rounded">Defeat</div>
+                                 <div>
+                                    <div className="font-bold text-white group-hover:text-nexus-accent transition-colors">Valorant</div>
+                                    <div className="text-xs text-slate-400">Competitive • Ascent • <span className="text-slate-300">14/15/4 KDA</span></div>
+                                 </div>
+                              </div>
+                              <div className="text-right">
+                                 <div className="font-bold text-slate-400">-22 RR</div>
+                                 <div className="text-xs text-slate-400">5h ago</div>
+                              </div>
+                           </div>
+                           <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg hover:bg-slate-750 transition-colors border-l-4 border-green-500 group">
+                              <div className="flex items-center gap-4">
+                                 <div className="font-bold text-green-500 uppercase text-sm w-16 bg-green-500/10 py-1 text-center rounded">Victory</div>
+                                 <div>
+                                    <div className="font-bold text-white group-hover:text-nexus-accent transition-colors">Apex Legends</div>
+                                    <div className="text-xs text-slate-400">Trios • World's Edge • <span className="text-slate-300">8 Kills</span></div>
+                                 </div>
+                              </div>
+                              <div className="text-right">
+                                 <div className="font-bold text-yellow-400">Champion</div>
+                                 <div className="text-xs text-slate-400">1d ago</div>
+                              </div>
+                           </div>
                         </div>
-                     )}
+                     </div>
                   </div>
                )}
                
                {activeTab === 'Badges' && (
-                  <div className="grid grid-cols-4 md:grid-cols-6 gap-4">
-                     {user.badges.map((b, i) => (
-                        <div key={i} className="aspect-square bg-slate-900/50 rounded-xl flex items-center justify-center text-4xl border border-slate-700 hover:border-nexus-glow hover:bg-slate-800 transition-all cursor-help" title="Rare Badge">
-                           {b}
+                  <div className="space-y-6 animate-fade-in">
+                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {user.badges.map((b, i) => (
+                           <div key={i} className="bg-slate-900/50 border border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-nexus-glow hover:bg-slate-800 transition-all group cursor-pointer">
+                              <div className="text-4xl mb-3 group-hover:scale-110 transition-transform filter drop-shadow-lg">{b}</div>
+                              <div className="font-bold text-white text-sm">Badge Title</div>
+                              <div className="text-xs text-slate-500 mt-1 group-hover:text-slate-300">Earned for being awesome in 2024</div>
+                           </div>
+                        ))}
+                        {/* Empty Slots / Locked */}
+                        {[1,2,3,4].map(i => (
+                           <div key={`e-${i}`} className="bg-slate-900/20 border border-slate-800 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all group">
+                              <div className="mb-3 p-3 bg-slate-800 rounded-full group-hover:bg-slate-700">
+                                <Lock size={20} className="text-slate-500" />
+                              </div>
+                              <div className="font-bold text-slate-600 text-sm group-hover:text-slate-400">Locked Badge</div>
+                              <div className="text-[10px] text-slate-700 mt-1 uppercase tracking-wide">Achieve Lvl {50 + (i*10)}</div>
+                           </div>
+                        ))}
+                     </div>
+                     <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-center gap-4">
+                        <Trophy size={32} className="text-yellow-500" />
+                        <div>
+                           <div className="font-bold text-yellow-500">Next Milestone</div>
+                           <div className="text-sm text-yellow-200/70">Reach Level 50 to unlock the "Master Tactician" badge.</div>
                         </div>
-                     ))}
-                     {/* Empty Slots */}
-                     {[1,2,3,4].map(i => (
-                        <div key={`e-${i}`} className="aspect-square bg-slate-900/20 rounded-xl flex items-center justify-center border border-slate-800 border-dashed text-slate-700">
-                           <Shield size={24} />
-                        </div>
-                     ))}
+                     </div>
                   </div>
                )}
             </div>

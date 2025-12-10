@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import Landing from './components/Landing';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
+import { SplashScreen } from './components/SplashScreen';
 import { ViewState, User, UserStatus } from './types';
 
 // Mock logged in user
@@ -17,6 +19,7 @@ const MOCK_CURRENT_USER: User = {
 };
 
 const App: React.FC = () => {
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewState>('LANDING');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -30,8 +33,12 @@ const App: React.FC = () => {
     setView('LANDING');
   };
 
+  if (loading) {
+    return <SplashScreen onFinish={() => setLoading(false)} />;
+  }
+
   return (
-    <div className="font-sans antialiased">
+    <div className="font-sans antialiased text-slate-200">
       {view === 'LANDING' && (
         <Landing 
           onGetStarted={() => setView('REGISTER')} 

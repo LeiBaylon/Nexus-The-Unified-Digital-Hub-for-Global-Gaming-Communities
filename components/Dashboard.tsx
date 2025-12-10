@@ -46,6 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
   
   const [isLootModalOpen, setIsLootModalOpen] = useState(false);
   const [isCreateServerOpen, setIsCreateServerOpen] = useState(false);
+  const [isServerSettingsOpen, setIsServerSettingsOpen] = useState(false);
   const [viewingProfile, setViewingProfile] = useState<User | null>(null);
   
   // App Preferences State
@@ -81,6 +82,30 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
     }
   };
 
+  const handleClearMessages = () => {
+    setMessages([]);
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+  };
+
+  const handleAddReaction = (messageId: string, emoji: string) => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        const existingReaction = msg.reactions?.find(r => r.emoji === emoji);
+        let newReactions;
+        if (existingReaction) {
+          newReactions = msg.reactions?.map(r => r.emoji === emoji ? { ...r, count: r.count + 1 } : r);
+        } else {
+          newReactions = [...(msg.reactions || []), { emoji, count: 1 }];
+        }
+        return { ...msg, reactions: newReactions };
+      }
+      return msg;
+    }));
+  };
+
   const handleOpenLoot = () => {
      setOpeningLoot(true);
      setLootResult(null);
@@ -92,6 +117,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
   };
 
   const handlePlaySound = (sound: SoundEffect) => {
+     // Play Audio
+     try {
+        const audio = new Audio(sound.src);
+        audio.volume = 0.5;
+        audio.play().catch(e => console.error("Failed to play sound:", e));
+     } catch(e) {
+        console.error("Audio error", e);
+     }
+
      const msg: Message = {
         id: Date.now().toString(),
         content: `played sound: *${sound.label}* 🔊`,
@@ -144,6 +178,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
      const user = MOCK_USERS.find(u => u.id === userId) || (userId === currentUser.id ? currentUser : null);
      if (user) setViewingProfile(user);
   };
+  
+  const handleMessageUser = (userId: string) => {
+    // Navigate to home/DM view
+    setViewingProfile(null);
+    setActiveServerId('home');
+    setActiveView('CHAT');
+    setActiveChannelId('dm-nexus');
+  };
 
   // Mock Rebind Function
   const handleRebind = (id: string) => {
@@ -175,6 +217,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                currentUser={currentUser}
                onOpenSettings={() => { setIsSettingsOpen(true); setSettingsTab('PROFILE'); }}
                onOpenProfile={() => setViewingProfile(currentUser)}
+               onOpenServerSettings={() => setIsServerSettingsOpen(true)}
+               users={MOCK_USERS}
             />
 
             <ChatInterface 
@@ -182,6 +226,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                messages={messages}
                currentUser={currentUser}
                onSendMessage={handleSendMessage}
+               onClearMessages={handleClearMessages}
+               onDeleteMessage={handleDeleteMessage}
+               onAddReaction={handleAddReaction}
                users={MOCK_USERS}
                onPlaySound={handlePlaySound}
                onUserClick={openProfile}
@@ -259,6 +306,39 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
         </form>
       </Modal>
 
+      {/* Server Settings Modal */}
+      <Modal isOpen={isServerSettingsOpen} onClose={() => setIsServerSettingsOpen(false)} title="Server Settings" size="sm">
+        <div className="p-6 space-y-6">
+           {activeServer ? (
+             <>
+               <div className="flex flex-col items-center gap-4 mb-4">
+                  <div className="w-20 h-20 rounded-full overflow-hidden ring-4 ring-slate-700 relative group cursor-pointer">
+                      <img src={activeServer.icon} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white">CHANGE</div>
+                  </div>
+                  <div className="text-center">
+                     <h3 className="text-xl font-bold text-white">{activeServer.name}</h3>
+                     <p className="text-xs text-slate-500">ID: {activeServer.id}</p>
+                  </div>
+               </div>
+               
+               <Input label="Server Name" defaultValue={activeServer.name} />
+               
+               <div className="pt-4 border-t border-slate-700">
+                  <h4 className="text-xs font-bold text-red-400 uppercase mb-2">Danger Zone</h4>
+                  <Button variant="danger" className="w-full">Delete Server</Button>
+               </div>
+             </>
+           ) : (
+             <p className="text-slate-400">No server selected.</p>
+           )}
+           <div className="flex justify-end gap-3 pt-4 border-t border-slate-700 mt-4">
+              <Button variant="ghost" onClick={() => setIsServerSettingsOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={() => setIsServerSettingsOpen(false)}>Save Changes</Button>
+           </div>
+        </div>
+      </Modal>
+
       {/* Profile Modal */}
       <Modal isOpen={!!viewingProfile} onClose={() => setViewingProfile(null)} size="lg">
          {viewingProfile && (
@@ -270,6 +350,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                   const idx = MOCK_USERS.findIndex(mu => mu.id === u.id);
                   if (idx !== -1) MOCK_USERS[idx] = u;
                }}
+               onMessageUser={handleMessageUser}
+               onClose={() => setViewingProfile(null)}
             />
          )}
       </Modal>

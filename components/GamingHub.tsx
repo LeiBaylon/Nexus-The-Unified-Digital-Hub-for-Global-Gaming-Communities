@@ -13,20 +13,23 @@ interface TournamentCardProps {
 }
 
 const TournamentCard: React.FC<TournamentCardProps> = ({ tournament, onRegister, onWatch, isRegistered }) => (
-  <div className="group bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-nexus-accent hover:shadow-lg hover:shadow-nexus-accent/10 transition-all duration-300 flex flex-col h-full animate-fade-in">
+  <div className="group bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-nexus-accent hover:shadow-[0_10px_30px_rgba(139,92,246,0.2)] transition-all duration-300 flex flex-col h-full animate-scale-in transform hover:-translate-y-2">
     <div className="h-40 bg-slate-900 relative overflow-hidden cursor-pointer" onClick={() => tournament.status === 'LIVE' ? onWatch(tournament) : onRegister(tournament)}>
-      <img src={tournament.image} alt={tournament.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+      <img src={tournament.image} alt={tournament.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+      <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-black/60 to-transparent"></div>
       <div className="absolute top-3 right-3">
-        <Badge color={tournament.status === 'LIVE' ? 'bg-red-500 animate-pulse' : 'bg-green-600'}>
+        <Badge color={tournament.status === 'LIVE' ? 'bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]' : 'bg-green-600'}>
           {tournament.status}
         </Badge>
       </div>
-      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900 to-transparent p-4">
-         <div className="text-xs font-bold text-nexus-glow uppercase tracking-wider">{tournament.game}</div>
+      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent p-4">
+         <div className="text-xs font-bold text-nexus-glow uppercase tracking-wider flex items-center gap-1">
+           <Gamepad2 size={12} /> {tournament.game}
+         </div>
       </div>
     </div>
     <div className="p-5 flex-1 flex flex-col">
-      <h3 className="text-xl font-bold text-white mb-2 leading-tight">{tournament.title}</h3>
+      <h3 className="text-xl font-bold text-white mb-2 leading-tight group-hover:text-nexus-accent transition-colors">{tournament.title}</h3>
       <div className="space-y-3 mb-6 flex-1">
         <div className="flex items-center text-slate-400 text-sm gap-2">
           <Trophy size={16} className="text-yellow-400" /> 
@@ -43,7 +46,7 @@ const TournamentCard: React.FC<TournamentCardProps> = ({ tournament, onRegister,
       </div>
       
       {tournament.status === 'LIVE' ? (
-         <Button variant="glow" className="w-full flex items-center justify-center gap-2" onClick={() => onWatch(tournament)}>
+         <Button variant="glow" className="w-full flex items-center justify-center gap-2 group-hover:bg-nexus-glow/10" onClick={() => onWatch(tournament)}>
             <Video size={16} /> Watch Stream
          </Button>
       ) : (
@@ -66,18 +69,18 @@ interface ClipCardProps {
 }
 
 const ClipCard: React.FC<ClipCardProps> = ({ clip, onPlay }) => (
-  <div onClick={() => onPlay(clip)} className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-nexus-glow transition-all group cursor-pointer relative aspect-[9/16] md:aspect-auto animate-fade-in">
-    <img src={clip.thumbnail} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent flex flex-col justify-end p-4">
-       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform scale-50 group-hover:scale-100 shadow-xl">
+  <div onClick={() => onPlay(clip)} className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-nexus-glow hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all duration-300 group cursor-pointer relative aspect-[9/16] md:aspect-auto animate-scale-in transform hover:-translate-y-1">
+    <img src={clip.thumbnail} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
+    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-4">
+       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform scale-50 group-hover:scale-100 shadow-xl border border-white/30">
           <Play size={24} className="text-white ml-1" fill="white" />
        </div>
        <div className="text-xs font-bold text-nexus-accent mb-1">{clip.game}</div>
        <h3 className="font-bold text-white leading-tight mb-2 line-clamp-2">{clip.title}</h3>
        <div className="flex items-center justify-between text-xs text-slate-300">
           <div className="flex items-center gap-3">
-             <span className="flex items-center gap-1"><Play size={12} /> {clip.views}</span>
-             <span className="flex items-center gap-1"><Heart size={12} /> {clip.likes}</span>
+             <span className="flex items-center gap-1 hover:text-white transition-colors"><Play size={12} /> {clip.views}</span>
+             <span className="flex items-center gap-1 hover:text-red-400 transition-colors"><Heart size={12} /> {clip.likes}</span>
           </div>
           <span>{clip.timestamp}</span>
        </div>
@@ -86,20 +89,20 @@ const ClipCard: React.FC<ClipCardProps> = ({ clip, onPlay }) => (
 );
 
 const LeaderboardRow = ({ rank, name, rating, winRate, main, avatar, change }: any) => (
-   <div className="grid grid-cols-12 gap-4 p-4 items-center bg-slate-800/50 hover:bg-slate-700/50 border-b border-slate-700/50 transition-colors group">
-      <div className="col-span-1 font-display font-bold text-xl text-slate-400 flex items-center gap-2">
+   <div className="grid grid-cols-12 gap-4 p-4 items-center bg-slate-800/50 hover:bg-slate-700 hover:shadow-lg hover:border-l-4 hover:border-l-nexus-accent border-b border-slate-700/50 transition-all duration-200 group cursor-pointer">
+      <div className="col-span-1 font-display font-bold text-xl text-slate-400 flex items-center gap-2 group-hover:text-white">
          #{rank}
-         {rank === 1 && <Crown size={16} className="text-yellow-400 fill-current" />}
+         {rank === 1 && <Crown size={16} className="text-yellow-400 fill-current animate-bounce" />}
       </div>
       <div className="col-span-4 flex items-center gap-3">
-         <Avatar src={avatar} size="sm" />
+         <Avatar src={avatar} size="sm" className="group-hover:scale-110 transition-transform" />
          <span className="font-bold text-white group-hover:text-nexus-accent transition-colors">{name}</span>
       </div>
-      <div className="col-span-2 text-nexus-glow font-mono font-bold">{rating}</div>
+      <div className="col-span-2 text-nexus-glow font-mono font-bold group-hover:scale-105 transition-transform">{rating}</div>
       <div className="col-span-2 text-slate-300">{winRate}</div>
       <div className="col-span-3 flex items-center gap-2 text-slate-400 text-sm">
          <Crosshair size={14} /> {main}
-         {change === 'up' && <span className="text-green-500 ml-auto text-xs">▲ 12</span>}
+         {change === 'up' && <span className="text-green-500 ml-auto text-xs animate-pulse">▲ 12</span>}
          {change === 'down' && <span className="text-red-500 ml-auto text-xs">▼ 5</span>}
          {change === 'flat' && <span className="text-slate-600 ml-auto text-xs">-</span>}
       </div>
@@ -135,7 +138,7 @@ export const GamingHub = () => {
   return (
     <div className="flex-1 bg-slate-900 overflow-y-auto custom-scrollbar p-6 md:p-8 relative">
        {/* Header */}
-       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 animate-slide-up">
           <div>
              <h1 className="text-4xl font-display font-bold text-white mb-2">Gaming Hub</h1>
              <p className="text-slate-400">Discover events, clips, and community highlights.</p>
@@ -152,7 +155,7 @@ export const GamingHub = () => {
 
        {/* Filter Bar */}
        {showFilters && (
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6 animate-slide-up flex flex-wrap gap-4 items-center">
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6 animate-scale-in flex flex-wrap gap-4 items-center shadow-lg">
              <div className="flex items-center gap-2 text-sm text-slate-400 border-r border-slate-700 pr-4">
                 <Gamepad2 size={16} /> Filter by Game:
              </div>
@@ -160,7 +163,7 @@ export const GamingHub = () => {
                 <button 
                   key={game}
                   onClick={() => setFilterGame(game)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filterGame === game ? 'bg-nexus-accent text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${filterGame === game ? 'bg-nexus-accent text-white shadow-[0_0_10px_rgba(139,92,246,0.5)] scale-105' : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'}`}
                 >
                    {game}
                 </button>
@@ -185,13 +188,13 @@ export const GamingHub = () => {
             {/* Create Promo Card */}
             <div 
                onClick={() => setShowCreateEvent(true)}
-               className="border-2 border-dashed border-slate-700 rounded-xl flex flex-col items-center justify-center p-8 text-slate-500 hover:border-nexus-accent hover:text-nexus-accent transition-all cursor-pointer min-h-[400px] group bg-slate-800/20 hover:bg-slate-800/50"
+               className="border-2 border-dashed border-slate-700 rounded-xl flex flex-col items-center justify-center p-8 text-slate-500 hover:border-nexus-accent hover:text-nexus-accent transition-all duration-300 cursor-pointer min-h-[400px] group bg-slate-800/20 hover:bg-slate-800/50 hover:shadow-lg hover:shadow-nexus-accent/10"
             >
-               <div className="w-16 h-16 rounded-full bg-slate-800 group-hover:bg-nexus-accent group-hover:text-white flex items-center justify-center transition-colors mb-4">
+               <div className="w-16 h-16 rounded-full bg-slate-800 group-hover:bg-nexus-accent group-hover:text-white flex items-center justify-center transition-all duration-300 mb-4 group-hover:scale-110 group-hover:rotate-12">
                   <Trophy size={32} />
                </div>
                <h3 className="text-xl font-bold mb-1">Host a Tournament</h3>
-               <p className="text-center text-sm mt-2 max-w-xs opacity-70">Create your own bracket, manage teams, and distribute prizes automatically.</p>
+               <p className="text-center text-sm mt-2 max-w-xs opacity-70 group-hover:opacity-100 transition-opacity">Create your own bracket, manage teams, and distribute prizes automatically.</p>
             </div>
          </div>
        )}
@@ -206,11 +209,11 @@ export const GamingHub = () => {
        {/* LEADERBOARDS TAB */}
        {activeTab === 'Leaderboards' && (
           <div className="animate-slide-up pb-8">
-             <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+             <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
                 <div className="p-4 bg-slate-900/50 border-b border-slate-700 flex justify-between items-center">
                    <h3 className="font-bold text-lg text-white">Global Rankings (Season 4)</h3>
                    <div className="flex gap-2">
-                      <select className="bg-slate-800 text-sm text-slate-300 border border-slate-700 rounded px-2 py-1 outline-none">
+                      <select className="bg-slate-800 text-sm text-slate-300 border border-slate-700 rounded px-2 py-1 outline-none hover:border-nexus-accent transition-colors">
                          <option>Global</option>
                          <option>NA East</option>
                          <option>EU West</option>
@@ -254,7 +257,7 @@ export const GamingHub = () => {
                 <Input label="Max Players" type="number" placeholder="64" />
                 <div className="col-span-2">
                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
-                   <textarea className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 focus:border-nexus-accent focus:outline-none h-24" placeholder="Rules, map rotation, etc..."></textarea>
+                   <textarea className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 focus:border-nexus-accent focus:outline-none h-24 transition-colors" placeholder="Rules, map rotation, etc..."></textarea>
                 </div>
              </div>
              <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
@@ -267,7 +270,7 @@ export const GamingHub = () => {
        {/* Stream Modal */}
        <Modal isOpen={!!showStream} onClose={() => setShowStream(null)} size="xl">
           {showStream && (
-             <div className="bg-black aspect-video relative group">
+             <div className="bg-black aspect-video relative group overflow-hidden rounded-b-2xl">
                 {/* Mock Stream UI */}
                 <div className="absolute inset-0 flex items-center justify-center">
                    <div className="text-center animate-pulse">
@@ -276,9 +279,9 @@ export const GamingHub = () => {
                    </div>
                 </div>
                 {/* Overlay Controls */}
-                <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black via-black/50 to-transparent flex justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black via-black/50 to-transparent flex justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                    <div className="flex items-center gap-4">
-                      <button className="text-white hover:text-nexus-accent"><Play size={24} fill="white" /></button>
+                      <button className="text-white hover:text-nexus-accent hover:scale-110 transition-transform"><Play size={24} fill="white" /></button>
                       <div className="text-white text-sm font-bold">LIVE • 00:00:00</div>
                    </div>
                    <div className="flex items-center gap-2">
@@ -294,7 +297,7 @@ export const GamingHub = () => {
        <Modal isOpen={!!showRegistration} onClose={() => setShowRegistration(null)} title="Confirm Registration">
           {showRegistration && (
              <div className="p-6">
-                <div className="flex items-start gap-4 mb-6 bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                <div className="flex items-start gap-4 mb-6 bg-slate-800/50 p-4 rounded-lg border border-slate-700 hover:border-nexus-accent transition-colors">
                    <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0">
                       <img src={showRegistration.image} className="w-full h-full object-cover" />
                    </div>
@@ -321,11 +324,11 @@ export const GamingHub = () => {
        <Modal isOpen={!!showClipPlayer} onClose={() => setShowClipPlayer(null)} size="lg">
           {showClipPlayer && (
              <div className="flex flex-col h-full bg-slate-900">
-                <div className="bg-black aspect-video relative flex items-center justify-center">
-                   <img src={showClipPlayer.thumbnail} className="absolute inset-0 w-full h-full object-cover opacity-50 blur-sm" />
-                   <Play size={64} className="relative z-10 text-white opacity-80" fill="white" />
+                <div className="bg-black aspect-video relative flex items-center justify-center group overflow-hidden">
+                   <img src={showClipPlayer.thumbnail} className="absolute inset-0 w-full h-full object-cover opacity-50 blur-sm group-hover:scale-105 transition-transform duration-1000" />
+                   <Play size={64} className="relative z-10 text-white opacity-80 group-hover:scale-110 transition-transform duration-300" fill="white" />
                    <div className="absolute bottom-4 left-4 z-10">
-                      <div className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded w-fit mb-1">YouTube</div>
+                      <div className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded w-fit mb-1 shadow-lg">YouTube</div>
                    </div>
                 </div>
                 <div className="p-6">

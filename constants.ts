@@ -106,10 +106,10 @@ export const MUSIC_TRACKS: MusicTrack[] = [
 ];
 
 export const SOUND_EFFECTS: SoundEffect[] = [
-  { id: 's1', label: 'Airhorn', icon: Zap, color: 'text-yellow-400' },
-  { id: 's2', label: 'GG WP', icon: Crown, color: 'text-green-400' },
-  { id: 's3', label: 'Oof', icon: Skull, color: 'text-red-400' },
-  { id: 's4', label: 'Level Up', icon: Trophy, color: 'text-nexus-accent' },
+  { id: 's1', label: 'Airhorn', icon: Zap, color: 'text-yellow-400', src: 'https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3' },
+  { id: 's2', label: 'GG WP', icon: Crown, color: 'text-green-400', src: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3' },
+  { id: 's3', label: 'Oof', icon: Skull, color: 'text-red-400', src: 'https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3' },
+  { id: 's4', label: 'Level Up', icon: Trophy, color: 'text-nexus-accent', src: 'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3' },
 ];
 
 export const LOOT_ITEMS: InventoryItem[] = [

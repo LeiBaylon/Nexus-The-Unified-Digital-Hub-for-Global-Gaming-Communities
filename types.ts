@@ -45,11 +45,13 @@ export interface Message {
   timestamp: Date;
   isSystem?: boolean;
   isAI?: boolean;
+  replyToId?: string;
   reactions?: { emoji: string; count: number }[];
   type?: 'TEXT' | 'IMAGE' | 'SYSTEM' | 'GIFT' | 'POLL';
   imageUrl?: string;
   giftData?: { title: string; tier: string; icon: string };
   pollData?: { question: string; options: { label: string; votes: number }[] };
+  groundingUrls?: { title: string; uri: string }[];
 }
 
 export interface Channel {
@@ -79,6 +81,7 @@ export interface SoundEffect {
   label: string;
   icon: any; // Lucide icon component
   color: string;
+  src: string; // URL to audio file
 }
 
 export interface InventoryItem {

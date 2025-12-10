@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Server, Channel, User, MusicTrack } from '../types';
 import { Avatar, ProgressBar } from './UIComponents';
@@ -127,18 +126,47 @@ interface ChannelSidebarProps {
   currentUser: User;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
+  onOpenServerSettings?: () => void;
+  users?: User[];
 }
 
-export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeChannelId, onSelectChannel, currentUser, onOpenSettings, onOpenProfile }) => {
+export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeChannelId, onSelectChannel, currentUser, onOpenSettings, onOpenProfile, onOpenServerSettings, users = [] }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
+
+  const handleToggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Prevent unmuting if deafened
+    if (isDeafened && isMuted) return;
+    setIsMuted(!isMuted);
+  };
+
+  const handleToggleDeafen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const willDeafen = !isDeafened;
+    setIsDeafened(willDeafen);
+    // If deafening, also mute. If undeafening, stay muted or unmute based on preference? 
+    // Standard behavior: Deafen -> Auto Mute. Undeafen -> Restore mute state (but simpler here: just unmute or keep mute).
+    // Let's enforce Mute when Deafened.
+    if (willDeafen) {
+      setIsMuted(true);
+    }
+  };
 
   return (
     <div className="w-64 bg-slate-800/50 flex flex-col border-r border-slate-800 backdrop-blur-sm">
       {/* Header */}
       <div className="h-12 border-b border-slate-700 flex items-center justify-between px-4 font-bold shadow-sm cursor-pointer hover:bg-slate-700/30 transition-colors">
         <span className="truncate">{server ? server.name : 'Direct Messages'}</span>
-        {server && <Settings size={16} className="text-slate-400" />}
+        {server && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onOpenServerSettings?.(); }} 
+            className="text-slate-400 hover:text-white transition-colors"
+            title="Server Settings"
+          >
+            <Settings size={16} />
+          </button>
+        )}
       </div>
 
       {/* Channels */}
@@ -177,14 +205,30 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
                     <Volume2 className="w-4 h-4 mr-1.5 opacity-60" />
                     <span className="truncate font-medium">{channel.name}</span>
                   </button>
-                  {/* Mock users in voice */}
-                  {channel.id === 'vc1' && (
+                  {/* Active Voice Channel Users */}
+                  {activeChannelId === channel.id && (
                     <div className="ml-6 mt-1 flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-slate-400 text-xs px-2 py-1 rounded hover:bg-slate-700/50 cursor-pointer">
-                         <Avatar src={currentUser.avatar} size="sm" className="w-5 h-5" />
-                         <span className="truncate">{currentUser.username}</span>
-                         {isMuted && <MicOff size={10} className="text-red-500" />}
-                         {isDeafened && <VolumeX size={10} className="text-red-500" />}
+                      <div className="flex items-center justify-between text-slate-400 text-xs px-2 py-1 rounded bg-slate-700/30 cursor-pointer group/user">
+                         <div className="flex items-center gap-2 overflow-hidden">
+                           <Avatar src={currentUser.avatar} status={currentUser.status} size="sm" className="w-5 h-5 flex-shrink-0" />
+                           <span className="truncate font-bold text-slate-300">{currentUser.username}</span>
+                         </div>
+                         <div className="flex gap-1">
+                            <button 
+                              onClick={handleToggleMute}
+                              className={`p-0.5 rounded hover:bg-slate-600 ${isMuted ? 'text-red-500' : 'text-slate-500'}`}
+                              title={isMuted ? "Unmute" : "Mute"}
+                            >
+                               {isMuted ? <MicOff size={12} /> : <Mic size={12} />}
+                            </button>
+                            <button 
+                              onClick={handleToggleDeafen}
+                              className={`p-0.5 rounded hover:bg-slate-600 ${isDeafened ? 'text-red-500' : 'text-slate-500'}`}
+                              title={isDeafened ? "Undeafen" : "Deafen"}
+                            >
+                               {isDeafened ? <VolumeX size={12} /> : <Headphones size={12} />}
+                            </button>
+                         </div>
                       </div>
                     </div>
                   )}
@@ -194,20 +238,28 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
           </>
         ) : (
           <div className="space-y-1">
-             <button className="w-full flex items-center gap-3 px-2 py-2 rounded-md hover:bg-slate-700/50 text-slate-300">
-                <Avatar src="https://picsum.photos/id/20/50/50" status="ONLINE" className="w-8 h-8" badge="🤖" />
-                <div className="text-left overflow-hidden">
-                   <div className="font-bold truncate text-sm">Nexus AI</div>
-                   <div className="text-[10px] text-nexus-glow truncate">Bot • Strategic Advisor</div>
-                </div>
-             </button>
-             <button className="w-full flex items-center gap-3 px-2 py-2 rounded-md hover:bg-slate-700/50 text-slate-300 opacity-70">
-                <Avatar src="https://picsum.photos/id/65/50/50" status="PLAYING" className="w-8 h-8" />
-                <div className="text-left">
-                   <div className="font-bold text-sm">JinxViper</div>
-                   <div className="text-[10px] text-slate-500">Playing LoL</div>
-                </div>
-             </button>
+             <h3 className="text-[10px] font-bold text-slate-500 uppercase px-2 mb-2 mt-2">Online</h3>
+             {users.filter(u => u.id !== currentUser.id).map(user => (
+               <button key={user.id} className="w-full flex items-center gap-3 px-2 py-2 rounded-md hover:bg-slate-700/50 text-slate-300 group transition-colors">
+                  <Avatar src={user.avatar} status={user.status} size="md" className="w-8 h-8" />
+                  <div className="text-left overflow-hidden min-w-0 flex-1">
+                     <div className="font-bold truncate text-sm text-slate-200 group-hover:text-white">{user.username}</div>
+                     <div className="text-[10px] truncate flex items-center gap-1 font-medium">
+                        {user.status === 'PLAYING' ? (
+                           <span className="text-nexus-accent">Playing {user.gameActivity}</span>
+                        ) : user.status === 'ONLINE' ? (
+                           <span className="text-green-500">Online</span>
+                        ) : user.status === 'IDLE' ? (
+                           <span className="text-yellow-500">Idle</span>
+                        ) : user.status === 'DND' ? (
+                           <span className="text-red-500">Do Not Disturb</span>
+                        ) : (
+                           <span className="text-slate-500">Offline</span>
+                        )}
+                     </div>
+                  </div>
+               </button>
+             ))}
           </div>
         )}
       </div>
@@ -223,7 +275,10 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
                {currentUser.username}
                <span className="text-[10px] text-nexus-accent bg-nexus-accent/10 px-1 rounded border border-nexus-accent/20">LVL {currentUser.level}</span>
             </div>
-            <div className="text-[10px] text-slate-400 truncate">#{currentUser.id.padStart(4, '0')}</div>
+            <div className="text-[10px] text-slate-400 truncate flex items-center gap-1">
+               #{currentUser.id.padStart(4, '0')}
+               {isDeafened ? <span className="text-red-400 font-bold">• Deafened</span> : isMuted ? <span className="text-red-400 font-bold">• Muted</span> : null}
+            </div>
           </div>
           <button onClick={(e) => { e.stopPropagation(); onOpenSettings(); }} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-transform hover:rotate-90">
              <Settings size={16} />
@@ -240,14 +295,14 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
         
         <div className="flex items-center justify-between px-1">
            <button 
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={handleToggleMute}
               className={`flex-1 flex justify-center py-1 rounded hover:bg-slate-700 transition-colors ${isMuted ? 'text-red-500' : 'text-slate-400 hover:text-white'}`}
               title={isMuted ? "Unmute" : "Mute"}
            >
               {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
            </button>
            <button 
-              onClick={() => setIsDeafened(!isDeafened)}
+              onClick={handleToggleDeafen}
               className={`flex-1 flex justify-center py-1 rounded hover:bg-slate-700 transition-colors ${isDeafened ? 'text-red-500' : 'text-slate-400 hover:text-white'}`}
               title={isDeafened ? "Undeafen" : "Deafen"}
            >
