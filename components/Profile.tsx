@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { User, UserStatus } from '../types';
 import { Avatar, Button, Input, Tabs, Badge, ProgressBar } from './UIComponents';
-import { Edit2, Twitch, Twitter, MessageSquare, Gamepad2, Trophy, Clock, Target, Shield, Save, Monitor, Cpu, HardDrive, CheckCircle, UserPlus, Send, History, Lock } from 'lucide-react';
+import { Edit2, Twitch, Twitter, MessageSquare, Gamepad2, Trophy, Clock, Target, Shield, Save, Monitor, Cpu, HardDrive, CheckCircle, UserPlus, Send, History, Lock, Link as LinkIcon, AlertCircle } from 'lucide-react';
 
 interface ProfileProps {
   user: User;
@@ -25,8 +25,11 @@ const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onU
     discord: user.socials?.discord || '',
     twitch: user.socials?.twitch || '',
     steam: user.socials?.steam || '',
+    xbox: user.socials?.xbox || '',
     banner: user.banner || ''
   });
+
+  const [connectingService, setConnectingService] = useState<string | null>(null);
 
   const handleSave = () => {
     const updatedUser: User = {
@@ -37,7 +40,8 @@ const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onU
       socials: {
         discord: editForm.discord,
         twitch: editForm.twitch,
-        steam: editForm.steam
+        steam: editForm.steam,
+        xbox: editForm.xbox
       }
     };
     setUser(updatedUser);
@@ -52,6 +56,40 @@ const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onU
   const handleMessageClick = () => {
     onClose?.(); // Ensure modal is closed
     onMessageUser?.(user.id);
+  };
+
+  const handleConnectAccount = (service: 'steam' | 'xbox' | 'twitch') => {
+      setConnectingService(service);
+      
+      // Simulate OAuth / API Connection
+      setTimeout(() => {
+          let newValue = '';
+          let statusUpdate = {};
+
+          if (service === 'steam') {
+              newValue = 'linked_steam_id_123';
+              statusUpdate = { status: UserStatus.PLAYING, gameActivity: 'Counter-Strike 2' };
+          } else if (service === 'xbox') {
+              newValue = 'GamerTag_Live';
+              statusUpdate = { status: UserStatus.PLAYING, gameActivity: 'Halo Infinite' };
+          } else if (service === 'twitch') {
+              newValue = 'TwitchStreamerTV';
+          }
+          
+          setEditForm(prev => ({ ...prev, [service]: newValue }));
+          
+          if (Object.keys(statusUpdate).length > 0) {
+              const updatedUser = { ...user, ...statusUpdate };
+              setUser(updatedUser);
+              onUpdate?.(updatedUser);
+          }
+          
+          setConnectingService(null);
+      }, 1500);
+  };
+
+  const handleDisconnectAccount = (service: 'steam' | 'xbox' | 'twitch') => {
+     setEditForm(prev => ({ ...prev, [service]: '' }));
   };
 
   return (
@@ -139,18 +177,66 @@ const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onU
               </div>
               
               <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2 pt-4">Linked Accounts</h3>
+              <p className="text-xs text-slate-400 mb-4 flex items-center gap-2"><AlertCircle size={12} /> Connecting an account will automatically update your "Playing" status.</p>
+              
               <div className="space-y-4">
-                 <div className="flex items-center gap-4">
-                    <Twitch className="text-[#9146FF]" />
-                    <Input placeholder="Twitch Username" value={editForm.twitch} onChange={(e: any) => setEditForm({...editForm, twitch: e.target.value})} />
+                 {/* Twitch */}
+                 <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
+                    <div className="flex items-center gap-3">
+                       <Twitch className="text-[#9146FF]" />
+                       <div>
+                          <div className="font-bold text-white">Twitch</div>
+                          <div className="text-xs text-slate-400">{editForm.twitch ? `Connected as ${editForm.twitch}` : 'Not connected'}</div>
+                       </div>
+                    </div>
+                    {editForm.twitch ? (
+                       <Button variant="danger" className="text-xs py-1 px-3" onClick={() => handleDisconnectAccount('twitch')}>Disconnect</Button>
+                    ) : (
+                       <Button variant="secondary" className="text-xs py-1 px-3" onClick={() => handleConnectAccount('twitch')} disabled={!!connectingService}>
+                          {connectingService === 'twitch' ? 'Connecting...' : 'Connect'}
+                       </Button>
+                    )}
                  </div>
-                 <div className="flex items-center gap-4">
-                    <Gamepad2 className="text-[#171A21]" />
-                    <Input placeholder="Steam ID" value={editForm.steam} onChange={(e: any) => setEditForm({...editForm, steam: e.target.value})} />
+
+                 {/* Steam */}
+                 <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
+                    <div className="flex items-center gap-3">
+                       <Gamepad2 className="text-[#171A21]" />
+                       <div>
+                          <div className="font-bold text-white">Steam</div>
+                          <div className="text-xs text-slate-400">{editForm.steam ? `Connected` : 'Not connected'}</div>
+                       </div>
+                    </div>
+                    {editForm.steam ? (
+                       <Button variant="danger" className="text-xs py-1 px-3" onClick={() => handleDisconnectAccount('steam')}>Disconnect</Button>
+                    ) : (
+                       <Button variant="secondary" className="text-xs py-1 px-3" onClick={() => handleConnectAccount('steam')} disabled={!!connectingService}>
+                          {connectingService === 'steam' ? 'Connecting...' : 'Connect'}
+                       </Button>
+                    )}
                  </div>
-                 <div className="flex items-center gap-4">
+
+                 {/* Xbox */}
+                 <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
+                    <div className="flex items-center gap-3">
+                       <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-xs font-bold text-white">X</div>
+                       <div>
+                          <div className="font-bold text-white">Xbox Live</div>
+                          <div className="text-xs text-slate-400">{editForm.xbox ? `Connected` : 'Not connected'}</div>
+                       </div>
+                    </div>
+                    {editForm.xbox ? (
+                       <Button variant="danger" className="text-xs py-1 px-3" onClick={() => handleDisconnectAccount('xbox')}>Disconnect</Button>
+                    ) : (
+                       <Button variant="secondary" className="text-xs py-1 px-3" onClick={() => handleConnectAccount('xbox')} disabled={!!connectingService}>
+                          {connectingService === 'xbox' ? 'Connecting...' : 'Connect'}
+                       </Button>
+                    )}
+                 </div>
+
+                 <div className="flex items-center gap-4 mt-2 opacity-50 pointer-events-none">
                     <MessageSquare className="text-[#5865F2]" />
-                    <Input placeholder="Discord Tag" value={editForm.discord} onChange={(e: any) => setEditForm({...editForm, discord: e.target.value})} />
+                    <Input placeholder="Discord Tag" value={editForm.discord} onChange={(e: any) => setEditForm({...editForm, discord: e.target.value})} disabled />
                  </div>
               </div>
 
@@ -206,7 +292,12 @@ const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onU
                              )}
                              {user.socials?.steam && (
                                 <a href="#" className="flex items-center gap-2 bg-slate-700/30 text-slate-300 px-4 py-2 rounded border border-slate-600 hover:bg-slate-700/50 transition-colors">
-                                   <Gamepad2 size={18} /> <span className="font-bold">{user.socials.steam}</span>
+                                   <Gamepad2 size={18} /> <span className="font-bold">Steam Linked</span>
+                                </a>
+                             )}
+                             {user.socials?.xbox && (
+                                <a href="#" className="flex items-center gap-2 bg-green-600/10 text-green-500 px-4 py-2 rounded border border-green-600/20 hover:bg-green-600/20 transition-colors">
+                                   <div className="w-4 h-4 rounded-full bg-green-600 text-white flex items-center justify-center text-[10px] font-bold">X</div> <span className="font-bold">Xbox Live</span>
                                 </a>
                              )}
                              {user.socials?.discord && (
@@ -214,7 +305,7 @@ const Profile: React.FC<ProfileProps> = ({ user: initialUser, isCurrentUser, onU
                                    <MessageSquare size={18} /> <span className="font-bold">{user.socials.discord}</span>
                                 </div>
                              )}
-                             {!user.socials?.twitch && !user.socials?.steam && !user.socials?.discord && (
+                             {!user.socials?.twitch && !user.socials?.steam && !user.socials?.discord && !user.socials?.xbox && (
                                 <span className="text-slate-500 italic">No accounts linked.</span>
                              )}
                           </div>

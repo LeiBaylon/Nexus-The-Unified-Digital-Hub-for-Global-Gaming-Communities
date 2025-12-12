@@ -136,7 +136,6 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
 
   const handleToggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Prevent unmuting if deafened
     if (isDeafened && isMuted) return;
     setIsMuted(!isMuted);
   };
@@ -145,9 +144,6 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
     e.stopPropagation();
     const willDeafen = !isDeafened;
     setIsDeafened(willDeafen);
-    // If deafening, also mute. If undeafening, stay muted or unmute based on preference? 
-    // Standard behavior: Deafen -> Auto Mute. Undeafen -> Restore mute state (but simpler here: just unmute or keep mute).
-    // Let's enforce Mute when Deafened.
     if (willDeafen) {
       setIsMuted(true);
     }
@@ -182,11 +178,14 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
                 <button
                   key={channel.id}
                   onClick={() => onSelectChannel(channel.id)}
-                  className={`w-full flex items-center px-2 py-1.5 rounded-md group transition-all ${activeChannelId === channel.id ? 'bg-slate-700 text-white translate-x-1' : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'}`}
+                  className={`w-full flex items-center px-2 py-1.5 rounded-md group transition-all duration-300 ${
+                    activeChannelId === channel.id 
+                      ? 'bg-gradient-to-r from-slate-700 to-slate-700/50 text-white translate-x-1 shadow-[0_0_15px_rgba(139,92,246,0.15)] border-l-2 border-nexus-accent animate-pulse-glow' 
+                      : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
+                  }`}
                 >
-                  <Hash className="w-4 h-4 mr-1.5 opacity-60" />
-                  <span className="truncate font-medium">{channel.name}</span>
-                  {activeChannelId !== channel.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white opacity-0 group-hover:opacity-100" />}
+                  <Hash className={`w-4 h-4 mr-1.5 transition-opacity ${activeChannelId === channel.id ? 'opacity-100 text-nexus-accent' : 'opacity-60'}`} />
+                  <span className={`truncate font-medium ${activeChannelId === channel.id ? 'text-shadow-sm' : ''}`}>{channel.name}</span>
                 </button>
               ))}
             </div>
@@ -200,15 +199,19 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
                 <div key={channel.id}>
                   <button
                     onClick={() => onSelectChannel(channel.id)}
-                    className={`w-full flex items-center px-2 py-1.5 rounded-md group transition-all ${activeChannelId === channel.id ? 'bg-slate-700 text-white translate-x-1' : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'}`}
+                    className={`w-full flex items-center px-2 py-1.5 rounded-md group transition-all duration-300 ${
+                      activeChannelId === channel.id 
+                        ? 'bg-gradient-to-r from-slate-700 to-slate-700/50 text-white translate-x-1 shadow-[0_0_15px_rgba(139,92,246,0.15)] border-l-2 border-nexus-accent animate-pulse-glow' 
+                        : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
+                    }`}
                   >
-                    <Volume2 className="w-4 h-4 mr-1.5 opacity-60" />
+                    <Volume2 className={`w-4 h-4 mr-1.5 transition-opacity ${activeChannelId === channel.id ? 'opacity-100 text-nexus-accent' : 'opacity-60'}`} />
                     <span className="truncate font-medium">{channel.name}</span>
                   </button>
                   {/* Active Voice Channel Users */}
                   {activeChannelId === channel.id && (
                     <div className="ml-6 mt-1 flex flex-col gap-1">
-                      <div className="flex items-center justify-between text-slate-400 text-xs px-2 py-1 rounded bg-slate-700/30 cursor-pointer group/user">
+                      <div className="flex items-center justify-between text-slate-400 text-xs px-2 py-1 rounded bg-slate-700/30 cursor-pointer group/user animate-slide-up">
                          <div className="flex items-center gap-2 overflow-hidden">
                            <Avatar src={currentUser.avatar} status={currentUser.status} size="sm" className="w-5 h-5 flex-shrink-0" />
                            <span className="truncate font-bold text-slate-300">{currentUser.username}</span>

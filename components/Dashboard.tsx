@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ServerSidebar, ChannelSidebar } from './Sidebars';
 import { ChatInterface } from './ChatInterface';
 import { GamingHub } from './GamingHub';
 import Profile from './Profile';
-import { Modal, Button, Badge, Input, Switch, Keycap, RadioCard } from './UIComponents';
+import { Modal, Button, Badge, Input, Switch, Keycap, RadioCard, ConfirmModal } from './UIComponents';
 import { MOCK_SERVERS, MOCK_USERS, INITIAL_MESSAGES, LOOT_ITEMS, NOTIFICATION_SOUNDS } from '../constants';
 import { User, Message, SoundEffect, InventoryItem, Server } from '../types';
 import { Gift, Shield, User as UserIcon, Keyboard, Palette, LogOut, Check, Plus, UploadCloud, Monitor, RefreshCw, X, Volume2 } from 'lucide-react';
@@ -50,6 +49,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
   const [isLootModalOpen, setIsLootModalOpen] = useState(false);
   const [isCreateServerOpen, setIsCreateServerOpen] = useState(false);
   const [isServerSettingsOpen, setIsServerSettingsOpen] = useState(false);
+  const [serverToDelete, setServerToDelete] = useState<string | null>(null);
+
   const [viewingProfile, setViewingProfile] = useState<User | null>(null);
   
   // App Preferences State
@@ -114,6 +115,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
          return { ...prev, xp: newXp };
        });
     }
+  };
+
+  const handleUpdateMessage = (messageId: string, updates: Partial<Message>) => {
+    setMessages(prev => prev.map(msg => msg.id === messageId ? { ...msg, ...updates } : msg));
   };
 
   const handleClearMessages = () => {
@@ -208,6 +213,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
     handleSelectServer(newServer.id);
   };
 
+  const handleDeleteServer = () => {
+     if (activeServerId && activeServerId !== 'home') {
+        setServers(prev => prev.filter(s => s.id !== activeServerId));
+        setActiveServerId('home');
+        setActiveChannelId('dm-nexus');
+        setIsServerSettingsOpen(false);
+        setServerToDelete(null); // Ensure modal closes
+     }
+  };
+
   const openProfile = (userId: string) => {
      const user = MOCK_USERS.find(u => u.id === userId) || (userId === currentUser.id ? currentUser : null);
      if (user) setViewingProfile(user);
@@ -260,6 +275,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                messages={messages}
                currentUser={currentUser}
                onSendMessage={handleSendMessage}
+               onUpdateMessage={handleUpdateMessage}
                onClearMessages={handleClearMessages}
                onDeleteMessage={handleDeleteMessage}
                onAddReaction={handleAddReaction}
@@ -360,7 +376,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                
                <div className="pt-4 border-t border-slate-700">
                   <h4 className="text-xs font-bold text-red-400 uppercase mb-2">Danger Zone</h4>
-                  <Button variant="danger" className="w-full">Delete Server</Button>
+                  <Button variant="danger" className="w-full" onClick={() => { setIsServerSettingsOpen(false); setServerToDelete(activeServer.id); }}>Delete Server</Button>
                </div>
              </>
            ) : (
@@ -372,6 +388,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
            </div>
         </div>
       </Modal>
+      
+      {/* Delete Server Confirm Modal */}
+      <ConfirmModal 
+        isOpen={!!serverToDelete} 
+        onClose={() => setServerToDelete(null)}
+        onConfirm={handleDeleteServer}
+        title="Delete Server"
+        message={`Are you sure you want to delete this server? This action cannot be undone and all channels will be lost.`}
+      />
 
       {/* Profile Modal */}
       <Modal isOpen={!!viewingProfile} onClose={() => setViewingProfile(null)} size="lg">

@@ -12,6 +12,7 @@ export interface SocialLinks {
   steam?: string;
   twitch?: string;
   twitter?: string;
+  xbox?: string;
 }
 
 export interface GameStat {
@@ -45,6 +46,7 @@ export interface Message {
   timestamp: Date;
   isSystem?: boolean;
   isAI?: boolean;
+  isRead?: boolean;
   replyToId?: string;
   reactions?: { emoji: string; count: number }[];
   type?: 'TEXT' | 'IMAGE' | 'SYSTEM' | 'GIFT' | 'POLL';

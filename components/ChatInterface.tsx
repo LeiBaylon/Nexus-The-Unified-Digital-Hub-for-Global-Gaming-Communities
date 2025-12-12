@@ -1,8 +1,7 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Message, User, Channel, SoundEffect } from '../types';
-import { Avatar, Button, Badge, EmojiPicker, ContextMenu, Modal } from './UIComponents';
-import { Send, Hash, Bell, Users, Search, PlusCircle, Smile, Gift, Command, MoreVertical, Music, Zap, Image as ImageIcon, BarChart2, FileText, Check, Trophy, Filter, X, ChevronDown, Trash2, Pin, CornerUpLeft, ExternalLink, Brain, Globe, Copy, Flag, Share, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Avatar, Button, Badge, EmojiPicker, ContextMenu, Modal, ConfirmModal } from './UIComponents';
+import { Send, Hash, Bell, Users, Search, PlusCircle, Smile, Gift, Command, MoreVertical, Music, Zap, Image as ImageIcon, BarChart2, FileText, Check, Trophy, Filter, X, ChevronDown, Trash2, Pin, CornerUpLeft, ExternalLink, Brain, Globe, Copy, Flag, Share, CheckCircle, AlertTriangle, CheckCheck } from 'lucide-react';
 import { sendMessageToAI, generateAIImage, getAIStrategy, getAINews } from '../services/gemini';
 import { SOUND_EFFECTS } from '../constants';
 
@@ -11,6 +10,7 @@ interface ChatInterfaceProps {
   messages: Message[];
   currentUser: User;
   onSendMessage: (msg: Message) => void;
+  onUpdateMessage: (id: string, updates: Partial<Message>) => void;
   onClearMessages: () => void;
   onDeleteMessage: (id: string) => void;
   onAddReaction: (messageId: string, emoji: string) => void;
@@ -35,11 +35,12 @@ const formatRelativeTime = (date: Date) => {
   return date.toLocaleDateString();
 };
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages, currentUser, onSendMessage, onClearMessages, onDeleteMessage, onAddReaction, users, onPlaySound, onUserClick, density }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages, currentUser, onSendMessage, onUpdateMessage, onClearMessages, onDeleteMessage, onAddReaction, users, onPlaySound, onUserClick, density }) => {
   const [inputValue, setInputValue] = useState('');
   const [isAITyping, setIsAITyping] = useState(false);
   const [showSoundboard, setShowSoundboard] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [inputPlaceholder, setInputPlaceholder] = useState('');
   
   // Filter State
   const [showFilters, setShowFilters] = useState(false);
@@ -73,11 +74,44 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
   const [claimedGift, setClaimedGift] = useState<{title: string, icon: string} | null>(null);
   const [messageToForward, setMessageToForward] = useState<Message | null>(null);
   const [messageToReport, setMessageToReport] = useState<string | null>(null);
-  const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [showReportConfirm, setShowReportConfirm] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Dynamic Placeholder Logic
+  useEffect(() => {
+     const suggestions = [
+        `Message #${channel.name}`,
+        `Type /image to generate cool art`,
+        `Type /strat to get gaming advice`,
+        `Try /news to see latest updates`,
+        `Ask @Nexus for help`,
+        `Share a clip or highlight`,
+        `Type /roll for RNG`
+     ];
+     let index = 0;
+     setInputPlaceholder(suggestions[0]);
+     
+     const interval = setInterval(() => {
+        index = (index + 1) % suggestions.length;
+        setInputPlaceholder(suggestions[index]);
+     }, 4000);
+
+     return () => clearInterval(interval);
+  }, [channel.name]);
+
+  // Simulate Read Receipts
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg && lastMsg.senderId === currentUser.id && !lastMsg.isRead) {
+        const timer = setTimeout(() => {
+           onUpdateMessage(lastMsg.id, { isRead: true });
+        }, 1500);
+        return () => clearTimeout(timer);
+    }
+  }, [messages, currentUser.id, onUpdateMessage]);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -126,7 +160,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
        content: `/${cmd} ${args}`,
        senderId: currentUser.id,
        timestamp: new Date(),
-       type: 'TEXT'
+       type: 'TEXT',
+       isRead: false
     });
     setInputValue('');
 
@@ -138,7 +173,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
       senderId: '4', // Nexus AI
       timestamp: new Date(),
       isAI: true,
-      type: 'TEXT'
+      type: 'TEXT',
+      isRead: true // Bot messages are instant read usually
     };
 
     try {
@@ -213,7 +249,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
       senderId: currentUser.id,
       timestamp: new Date(),
       type: 'TEXT',
-      replyToId: replyingTo?.id
+      replyToId: replyingTo?.id,
+      isRead: false
     };
 
     onSendMessage(newMessage);
@@ -303,11 +340,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
   };
 
   const executeReport = () => {
-     setReportSubmitted(true);
+     // Here we could simulate an API call
+     // Then close the report modal and show confirmation
+     setMessageToReport(null);
+     setShowReportConfirm(true);
      setTimeout(() => {
-        setReportSubmitted(false);
-        setMessageToReport(null);
-     }, 1500);
+        setShowReportConfirm(false);
+     }, 2000);
   };
 
   const handleCreatePoll = () => {
@@ -716,9 +755,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
                               </div>
                             </div>
                         ) : (
-                            <p className={`text-slate-300 whitespace-pre-wrap leading-relaxed ${msg.isAI ? 'font-medium' : ''} ${msg.isSystem ? 'italic text-nexus-glow' : ''}`}>
-                              {msg.content}
-                            </p>
+                            <div className="flex items-end gap-2 group/text">
+                                <p className={`text-slate-300 whitespace-pre-wrap leading-relaxed ${msg.isAI ? 'font-medium' : ''} ${msg.isSystem ? 'italic text-nexus-glow' : ''}`}>
+                                  {msg.content}
+                                </p>
+                                {/* Read Receipt */}
+                                {msg.senderId === currentUser.id && (
+                                    <CheckCheck 
+                                        size={14} 
+                                        className={`${msg.isRead ? 'text-nexus-glow' : 'text-slate-600'} transition-colors ml-1 mb-0.5`} 
+                                        title={msg.isRead ? "Read" : "Sent"}
+                                    />
+                                )}
+                            </div>
                         )}
                         
                         {/* Grounding Sources (Search Results) */}
@@ -813,8 +862,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
                   <form onSubmit={handleSend}>
                     <input 
                       ref={inputRef}
-                      className="w-full bg-transparent text-slate-200 placeholder-slate-500 focus:outline-none h-auto min-h-[24px] resize-none"
-                      placeholder={`Message #${channel.name} (Try /image, /strat, /news)`}
+                      className="w-full bg-transparent text-slate-200 placeholder-slate-500 focus:outline-none h-auto min-h-[24px] resize-none transition-all duration-300"
+                      placeholder={inputPlaceholder}
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       autoFocus
@@ -952,60 +1001,52 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
       </Modal>
 
       {/* Report Modal */}
-      <Modal isOpen={!!messageToReport} onClose={() => !reportSubmitted && setMessageToReport(null)} title="Report Message" size="sm">
-          {!reportSubmitted ? (
-              <div className="p-6">
-                 <p className="text-slate-300 mb-4">Please select a reason for reporting this message:</p>
-                 <div className="space-y-2 mb-6">
-                     {['Spam or Unwanted Commercial Content', 'Harassment or Bullying', 'Hate Speech', 'NSFW Content', 'Other'].map((reason) => (
-                         <label key={reason} className="flex items-center gap-3 p-3 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-700/50 transition-colors">
-                             <input type="radio" name="reportReason" className="text-nexus-accent focus:ring-nexus-accent bg-slate-800 border-slate-600" />
-                             <span className="text-sm text-white">{reason}</span>
-                         </label>
-                     ))}
-                 </div>
-                 <div className="flex justify-end gap-3">
-                    <Button variant="ghost" onClick={() => setMessageToReport(null)}>Cancel</Button>
-                    <Button variant="danger" onClick={executeReport}>Submit Report</Button>
-                 </div>
+      <Modal isOpen={!!messageToReport} onClose={() => setMessageToReport(null)} title="Report Message" size="sm">
+          <div className="p-6">
+              <p className="text-slate-300 mb-4">Please select a reason for reporting this message:</p>
+              <div className="space-y-2 mb-6">
+                  {['Spam or Unwanted Commercial Content', 'Harassment or Bullying', 'Hate Speech', 'NSFW Content', 'Other'].map((reason) => (
+                      <label key={reason} className="flex items-center gap-3 p-3 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-700/50 transition-colors">
+                          <input type="radio" name="reportReason" className="text-nexus-accent focus:ring-nexus-accent bg-slate-800 border-slate-600" />
+                          <span className="text-sm text-white">{reason}</span>
+                      </label>
+                  ))}
               </div>
-          ) : (
-              <div className="p-10 flex flex-col items-center text-center animate-fade-in">
-                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center text-green-500 mb-4">
-                      <CheckCircle size={32} />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Report Received</h3>
-                  <p className="text-slate-400">Thank you for helping keep Nexus safe. Our team will review this shortly.</p>
+              <div className="flex justify-end gap-3">
+                <Button variant="ghost" onClick={() => setMessageToReport(null)}>Cancel</Button>
+                <Button variant="danger" onClick={executeReport}>Submit Report</Button>
               </div>
-          )}
+          </div>
+      </Modal>
+
+      {/* Report Success Modal */}
+      <Modal isOpen={showReportConfirm} onClose={() => {}} size="sm">
+          <div className="p-10 flex flex-col items-center text-center animate-fade-in">
+              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center text-green-500 mb-4">
+                  <CheckCircle size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Report Received</h3>
+              <p className="text-slate-400">Thank you for helping keep Nexus safe. Our team will review this shortly.</p>
+          </div>
       </Modal>
 
       {/* Clear Confirm Modal */}
-      <Modal isOpen={showClearConfirm} onClose={() => setShowClearConfirm(false)} title="Clear Chat History">
-        <div className="p-6">
-           <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
-                 <Trash2 size={24} />
-              </div>
-              <p className="text-slate-300">Are you sure you want to clear your view of the chat history? This action cannot be undone.</p>
-           </div>
-           <div className="flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setShowClearConfirm(false)}>Cancel</Button>
-              <Button variant="danger" onClick={() => { onClearMessages(); setShowClearConfirm(false); }}>Clear Chat</Button>
-           </div>
-        </div>
-      </Modal>
+      <ConfirmModal 
+        isOpen={showClearConfirm} 
+        onClose={() => setShowClearConfirm(false)} 
+        onConfirm={onClearMessages}
+        title="Clear Chat History"
+        message="Are you sure you want to clear your view of the chat history? This action cannot be undone."
+      />
 
       {/* Delete Message Confirm Modal */}
-      <Modal isOpen={!!messageToDelete} onClose={() => setMessageToDelete(null)} title="Delete Message">
-        <div className="p-6">
-           <p className="text-slate-300 mb-6">Are you sure you want to delete this message? This action cannot be undone.</p>
-           <div className="flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setMessageToDelete(null)}>Cancel</Button>
-              <Button variant="danger" onClick={() => { if (messageToDelete) onDeleteMessage(messageToDelete); setMessageToDelete(null); }}>Delete</Button>
-           </div>
-        </div>
-      </Modal>
+      <ConfirmModal 
+        isOpen={!!messageToDelete}
+        onClose={() => setMessageToDelete(null)}
+        onConfirm={() => messageToDelete && onDeleteMessage(messageToDelete)}
+        title="Delete Message"
+        message="Are you sure you want to delete this message? This action cannot be undone."
+      />
     </div>
   );
 };

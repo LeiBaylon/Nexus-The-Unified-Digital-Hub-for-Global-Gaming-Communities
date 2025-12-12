@@ -1,6 +1,6 @@
 
 import React, { Fragment } from 'react';
-import { X } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 
 export const Button = ({ children, variant = 'primary', className = '', ...props }: any) => {
   const baseStyle = "px-6 py-2 rounded-lg font-display font-bold tracking-wider transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden group";
@@ -136,6 +136,26 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: any) =>
       </div>
     </div>
   );
+};
+
+export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Confirm", variant = "danger" }: any) => {
+    if (!isOpen) return null;
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
+            <div className="p-6">
+                <div className="flex items-start gap-4 mb-4">
+                    <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center text-red-500 shrink-0 border border-slate-700">
+                        <AlertTriangle size={24} className={variant === 'danger' ? 'text-red-500' : 'text-yellow-500'} />
+                    </div>
+                    <p className="text-slate-300 leading-relaxed pt-1">{message}</p>
+                </div>
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700/50">
+                    <Button variant="ghost" onClick={onClose}>Cancel</Button>
+                    <Button variant={variant} onClick={() => { onConfirm(); onClose(); }}>{confirmText}</Button>
+                </div>
+            </div>
+        </Modal>
+    );
 };
 
 export const ProgressBar = ({ value, max, color = "bg-nexus-accent", className = "" }: any) => {
