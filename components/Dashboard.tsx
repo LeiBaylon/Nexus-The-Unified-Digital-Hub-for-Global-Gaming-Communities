@@ -5,7 +5,7 @@ import { ServerSidebar, ChannelSidebar } from './Sidebars';
 import { ChatInterface } from './ChatInterface';
 import { GamingHub } from './GamingHub';
 import Profile from './Profile';
-import { Modal, Button, Input, Switch, Tabs, Avatar, ConfirmModal, Select, RadioCard, ProgressBar, Keycap } from './UIComponents';
+import { Modal, Button, Input, Switch, Tabs, Avatar, ConfirmModal, Select, RadioCard, ProgressBar, Keycap, Badge } from './UIComponents';
 import { 
   Settings, LogOut, Plus, Trash2, X, Image as ImageIcon, Camera, Globe, Copy, 
   Shield, Smile, Activity, Search, Save, Bell, Gamepad2, Users, GraduationCap, ChevronLeft,
@@ -19,6 +19,93 @@ interface DashboardProps {
   currentUser: User;
   onLogout: () => void;
 }
+
+const TEMPLATE_PRESETS: Record<string, any> = {
+    GAMING: {
+        label: "Gaming Community",
+        description: "A fortress for your clan. Includes tactical channels and ranked lobbies.",
+        channels: [
+            { name: "general", type: "TEXT" },
+            { name: "announcements", type: "TEXT" },
+            { name: "clips-highlights", type: "TEXT" },
+            { name: "lfg-ranked", type: "TEXT" },
+            { name: "strategies", type: "TEXT" },
+            { name: "Lobby", type: "VOICE" },
+            { name: "Duo Queue", type: "VOICE" },
+            { name: "Squad Stream", type: "VOICE" }
+        ],
+        roles: [
+            { name: "Server Admin", color: "#ef4444", permissions: ["ADMINISTRATOR"], isHoisted: true },
+            { name: "Moderator", color: "#f59e0b", permissions: ["KICK_MEMBERS", "MANAGE_MESSAGES"], isHoisted: true },
+            { name: "Esports Pro", color: "#8b5cf6", permissions: ["CONNECT", "SPEAK", "Attach Files"], isHoisted: true },
+            { name: "Member", color: "#94a3b8", permissions: ["CONNECT", "SPEAK"], isHoisted: false }
+        ],
+        settings: {
+            verificationLevel: 'HIGH',
+            explicitContentFilter: 'ALL_MEMBERS',
+            region: 'US-East'
+        }
+    },
+    SCHOOL: {
+        label: "School Club",
+        description: "Collaborate on projects and hang out after class.",
+        channels: [
+            { name: "announcements", type: "TEXT" },
+            { name: "general", type: "TEXT" },
+            { name: "homework-help", type: "TEXT" },
+            { name: "events", type: "TEXT" },
+            { name: "off-topic", type: "TEXT" },
+            { name: "Study Room A", type: "VOICE" },
+            { name: "Study Room B", type: "VOICE" },
+            { name: "Lounge", type: "VOICE" }
+        ],
+        roles: [
+            { name: "President", color: "#3b82f6", permissions: ["ADMINISTRATOR"], isHoisted: true },
+            { name: "Officer", color: "#22c55e", permissions: ["MANAGE_CHANNELS", "KICK_MEMBERS"], isHoisted: true },
+            { name: "Student", color: "#94a3b8", permissions: ["CONNECT", "SPEAK"], isHoisted: false }
+        ],
+        settings: {
+            verificationLevel: 'MEDIUM',
+            region: 'US-East'
+        }
+    },
+    SOCIAL: {
+        label: "Friends & Chill",
+        description: "A cozy space for you and your besties.",
+        channels: [
+            { name: "general", type: "TEXT" },
+            { name: "memes", type: "TEXT" },
+            { name: "music-requests", type: "TEXT" },
+            { name: "party-planning", type: "TEXT" },
+            { name: "The Hangout", type: "VOICE" },
+            { name: "Cinema", type: "VOICE" }
+        ],
+        roles: [
+            { name: "Host", color: "#ec4899", permissions: ["ADMINISTRATOR"], isHoisted: true },
+            { name: "Bestie", color: "#a855f7", permissions: ["MANAGE_MESSAGES", "MOVE_MEMBERS"], isHoisted: true },
+            { name: "Friend", color: "#f472b6", permissions: ["CONNECT", "SPEAK"], isHoisted: false }
+        ],
+        settings: {
+            verificationLevel: 'LOW',
+            region: 'US-East'
+        }
+    },
+    CUSTOM: {
+        label: "Custom Server",
+        description: "Start from scratch. Build it your way.",
+        channels: [
+            { name: "general", type: "TEXT" },
+            { name: "General", type: "VOICE" }
+        ],
+        roles: [
+            { name: "Admin", color: "#94a3b8", permissions: ["ADMINISTRATOR"], isHoisted: true }
+        ],
+        settings: {
+            verificationLevel: 'NONE',
+            region: 'US-East'
+        }
+    }
+};
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
   const [servers, setServers] = useState<Server[]>(MOCK_SERVERS);
@@ -163,39 +250,35 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
   const handleCreateServer = () => {
       if (!createData.name) return;
       
-      let defaultChannels: Channel[] = [
-          { id: `gen-${Date.now()}`, name: 'general', type: 'TEXT' }
-      ];
+      const preset = TEMPLATE_PRESETS[createData.template] || TEMPLATE_PRESETS['CUSTOM'];
+      
+      // Generate channels from preset
+      const generatedChannels: Channel[] = preset.channels.map((c: any, index: number) => ({
+          id: `${c.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}-${index}`,
+          name: c.name,
+          type: c.type
+      }));
 
-      // Template Logic
-      if (createData.template === 'GAMING') {
-          defaultChannels.push(
-              { id: `clips-${Date.now()}`, name: 'clips', type: 'TEXT' },
-              { id: `strat-${Date.now()}`, name: 'strategies', type: 'TEXT' },
-              { id: `lobby-${Date.now()}`, name: 'Lobby', type: 'VOICE' },
-              { id: `ranked-${Date.now()}`, name: 'Ranked', type: 'VOICE' }
-          );
-      } else if (createData.template === 'SOCIAL') {
-          defaultChannels.push(
-              { id: `memes-${Date.now()}`, name: 'memes', type: 'TEXT' },
-              { id: `music-${Date.now()}`, name: 'music', type: 'TEXT' },
-              { id: `lounge-${Date.now()}`, name: 'Lounge', type: 'VOICE' }
-          );
-      } else if (createData.template === 'CLAN') {
-          defaultChannels.push(
-              { id: `announcements-${Date.now()}`, name: 'announcements', type: 'TEXT' },
-              { id: `war-room-${Date.now()}`, name: 'War Room', type: 'VOICE' }
-          );
-      }
+      // Generate roles from preset
+      const generatedRoles: Role[] = preset.roles.map((r: any, index: number) => ({
+          id: `role-${Date.now()}-${index}`,
+          name: r.name,
+          color: r.color,
+          permissions: r.permissions,
+          isHoisted: r.isHoisted
+      }));
 
       const newServer: Server = {
           id: `server-${Date.now()}`,
           name: createData.name,
           icon: createData.icon || `https://picsum.photos/seed/${createData.name}/100/100`,
-          channels: defaultChannels,
+          channels: generatedChannels,
           region: createData.region,
-          roles: [],
-          emojis: []
+          roles: generatedRoles,
+          emojis: [],
+          verificationLevel: preset.settings.verificationLevel,
+          explicitContentFilter: preset.settings.explicitContentFilter,
+          template: createData.template as any
       };
       
       setServers([...servers, newServer]);
@@ -370,6 +453,24 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
                     </div>
                 ) : (
                     <div className="space-y-6 animate-slide-up">
+                        {/* Template Summary Preview */}
+                        <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50 mb-6 flex items-start gap-4">
+                            <div className="p-3 bg-slate-700 rounded-lg">
+                                {createData.template === 'GAMING' && <Gamepad2 className="text-nexus-accent" />}
+                                {createData.template === 'SCHOOL' && <GraduationCap className="text-blue-400" />}
+                                {createData.template === 'SOCIAL' && <Users className="text-pink-400" />}
+                                {createData.template === 'CUSTOM' && <Plus className="text-slate-400" />}
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-white text-sm">{TEMPLATE_PRESETS[createData.template]?.label || 'Custom Server'}</h4>
+                                <p className="text-xs text-slate-400 mt-1">{TEMPLATE_PRESETS[createData.template]?.description || 'Custom configuration'}</p>
+                                <div className="flex gap-2 mt-2">
+                                    <Badge className="bg-slate-700 text-xs">{TEMPLATE_PRESETS[createData.template]?.channels.length || 0} Channels</Badge>
+                                    <Badge className="bg-slate-700 text-xs">{TEMPLATE_PRESETS[createData.template]?.roles.length || 0} Roles</Badge>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="flex justify-center mb-6">
                             <div 
                                 className="w-24 h-24 border-2 border-dashed border-slate-600 rounded-full flex items-center justify-center cursor-pointer hover:border-nexus-accent hover:text-nexus-accent transition-colors relative overflow-hidden group bg-slate-800"
@@ -555,582 +656,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
                         <div className="flex gap-2 mt-auto">
                             <Button variant="ghost" className="flex-1" onClick={() => setPendingVoiceChannel(null)}>Cancel</Button>
                             <Button variant="success" className="flex-1" onClick={confirmVoiceJoin}>Join Voice</Button>
-                        </div>
-                    </div>
-                </div>
-            </Modal>
-        )}
-
-        {/* User Settings Modal */}
-        <Modal isOpen={showUserSettings} onClose={() => setShowUserSettings(false)} title="User Settings" size="lg">
-             <div className="flex h-[500px]">
-                 <div className="w-48 border-r border-slate-700 p-2 space-y-1">
-                     <button onClick={() => setUserSettingsTab('MY_ACCOUNT')} className={`w-full text-left px-3 py-2 rounded font-bold text-sm ${userSettingsTab === 'MY_ACCOUNT' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>My Account</button>
-                     <button onClick={() => setUserSettingsTab('PRIVACY')} className={`w-full text-left px-3 py-2 rounded text-sm ${userSettingsTab === 'PRIVACY' ? 'bg-nexus-accent text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>Privacy & Safety</button>
-                     <button onClick={() => setUserSettingsTab('APPS')} className={`w-full text-left px-3 py-2 rounded text-sm ${userSettingsTab === 'APPS' ? 'bg-nexus-accent text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>Authorized Apps</button>
-                     <div className="h-px bg-slate-700 my-2"></div>
-                     <button onClick={() => setUserSettingsTab('VOICE')} className={`w-full text-left px-3 py-2 rounded text-sm ${userSettingsTab === 'VOICE' ? 'bg-nexus-accent text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>Voice & Video</button>
-                     <button onClick={() => setUserSettingsTab('NOTIFICATIONS')} className={`w-full text-left px-3 py-2 rounded text-sm ${userSettingsTab === 'NOTIFICATIONS' ? 'bg-nexus-accent text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>Notifications</button>
-                     <button onClick={() => setUserSettingsTab('KEYBINDS')} className={`w-full text-left px-3 py-2 rounded text-sm ${userSettingsTab === 'KEYBINDS' ? 'bg-nexus-accent text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>Keybinds</button>
-                     <div className="h-px bg-slate-700 my-2"></div>
-                     <button onClick={onLogout} className="w-full text-left px-3 py-2 rounded hover:bg-red-500/10 text-red-400 text-sm flex items-center gap-2">
-                         <LogOut size={14} /> Log Out
-                     </button>
-                 </div>
-                 <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
-                     {userSettingsTab === 'MY_ACCOUNT' && (
-                         <div className="animate-fade-in">
-                             <h3 className="text-lg font-bold text-white mb-6">My Account</h3>
-                             <Profile user={currentUser} isCurrentUser={true} />
-                         </div>
-                     )}
-                     
-                     {userSettingsTab === 'PRIVACY' && (
-                        <div className="space-y-6 animate-fade-in">
-                            <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2">Privacy & Safety</h3>
-                            
-                            <div className="space-y-4">
-                                <h4 className="text-sm font-bold text-slate-400 uppercase">Safe Direct Messaging</h4>
-                                <RadioCard title="Keep me safe" description="Scan direct messages from everyone." selected={true} onClick={()=>{}} color="bg-green-500" icon={<Shield size={20}/>} />
-                                <RadioCard title="My friends are nice" description="Scan direct messages from everyone unless they are a friend." selected={false} onClick={()=>{}} color="bg-yellow-500" icon={<Users size={20}/>} />
-                                <RadioCard title="I live on the edge" description="Do not scan direct messages. (Not recommended)" selected={false} onClick={()=>{}} color="bg-red-500" icon={<Activity size={20}/>} />
-                            </div>
-
-                            <div className="h-px bg-slate-800" />
-
-                            <div className="space-y-4">
-                                <h4 className="text-sm font-bold text-slate-400 uppercase">Server Privacy Defaults</h4>
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm text-slate-200">Allow direct messages from server members</div>
-                                    <Switch checked={true} onChange={()=>{}} />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm text-slate-200">Allow joining game activity</div>
-                                    <Switch checked={true} onChange={()=>{}} />
-                                </div>
-                            </div>
-                        </div>
-                     )}
-
-                     {userSettingsTab === 'APPS' && (
-                        <div className="space-y-6 animate-fade-in">
-                            <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2">Authorized Apps</h3>
-                            <div className="space-y-2">
-                                {[{name: 'Spotify', date: 'Oct 24, 2024'}, {name: 'Steam', date: 'Sep 12, 2024'}, {name: 'Twitch', date: 'Aug 05, 2024'}].map(app => (
-                                    <div key={app.name} className="flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700">
-                                        <div>
-                                            <div className="font-bold text-white">{app.name}</div>
-                                            <div className="text-xs text-slate-500">Authorized on {app.date}</div>
-                                        </div>
-                                        <Button variant="danger" className="py-1 px-3 text-xs">Deauthorize</Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                     )}
-
-                     {userSettingsTab === 'VOICE' && (
-                        <div className="space-y-6 animate-fade-in">
-                            <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2">Voice & Video</h3>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                                <Select label="Input Device" options={[{label: 'Default - Microphone (Yeti Stereo)', value: 'default'}]} />
-                                <Select label="Output Device" options={[{label: 'Default - Headphones (HyperX Cloud)', value: 'default'}]} />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Input Volume</label>
-                                <ProgressBar value={75} max={100} className="h-2 bg-slate-800" />
-                            </div>
-                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Output Volume</label>
-                                <ProgressBar value={40} max={100} className="h-2 bg-slate-800" />
-                            </div>
-
-                            <div className="h-px bg-slate-800" />
-
-                            <h4 className="text-sm font-bold text-slate-400 uppercase">Video Settings</h4>
-                            <Select label="Camera" options={[{label: 'OBS Virtual Camera', value: 'obs'}, {label: 'Logitech Brio', value: 'brio'}]} />
-                            
-                            <div className="bg-black aspect-video rounded-lg flex items-center justify-center border border-slate-700">
-                                <div className="text-slate-500 text-sm flex items-center gap-2"><Camera size={16}/> Preview Hidden</div>
-                            </div>
-                        </div>
-                     )}
-
-                     {userSettingsTab === 'NOTIFICATIONS' && (
-                        <div className="space-y-6 animate-fade-in">
-                            <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2">Notifications</h3>
-                            
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className="text-sm font-bold text-slate-200">Enable Desktop Notifications</div>
-                                        <div className="text-xs text-slate-500">Get a push notification when you're not looking.</div>
-                                    </div>
-                                    <Switch checked={true} onChange={()=>{}} />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className="text-sm font-bold text-slate-200">Enable Unread Message Badge</div>
-                                        <div className="text-xs text-slate-500">Show a red badge on the app icon.</div>
-                                    </div>
-                                    <Switch checked={true} onChange={()=>{}} />
-                                </div>
-                                 <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className="text-sm font-bold text-slate-200">Text-to-Speech Notifications</div>
-                                        <div className="text-xs text-slate-500">Have a robot read your messages to you.</div>
-                                    </div>
-                                    <Switch checked={false} onChange={()=>{}} />
-                                </div>
-                            </div>
-                        </div>
-                     )}
-
-                     {userSettingsTab === 'KEYBINDS' && (
-                        <div className="space-y-6 animate-fade-in">
-                            <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2">Keybinds</h3>
-                            
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
-                                    <span className="font-bold text-slate-300">Push to Talk</span>
-                                    <div className="flex gap-1"><Keycap>MOUSE4</Keycap></div>
-                                </div>
-                                <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
-                                    <span className="font-bold text-slate-300">Toggle Mute</span>
-                                    <div className="flex gap-1"><Keycap>CTRL</Keycap> <Keycap>SHIFT</Keycap> <Keycap>M</Keycap></div>
-                                </div>
-                                <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
-                                    <span className="font-bold text-slate-300">Toggle Deafen</span>
-                                    <div className="flex gap-1"><Keycap>CTRL</Keycap> <Keycap>SHIFT</Keycap> <Keycap>D</Keycap></div>
-                                </div>
-                                <Button variant="secondary" className="w-full text-xs dashed border-slate-600"><Plus size={14}/> Add Keybind</Button>
-                            </div>
-                        </div>
-                     )}
-                 </div>
-             </div>
-        </Modal>
-
-        {/* Server Settings Modal */}
-        {activeServer && (
-            <Modal isOpen={showServerSettings} onClose={() => setShowServerSettings(false)} size="xl">
-                <div className="flex h-[600px] bg-slate-900 text-slate-200 rounded-xl overflow-hidden">
-                    <div className="w-60 bg-slate-950 p-4 flex flex-col border-r border-slate-800">
-                        <div className="text-xs font-bold text-slate-500 uppercase mb-2 px-2">{activeServer.name}</div>
-                        <div className="space-y-1 flex-1">
-                            <button onClick={() => setServerSettingsTab('OVERVIEW')} className={`w-full text-left px-3 py-2 rounded text-sm font-medium ${serverSettingsTab === 'OVERVIEW' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}>Overview</button>
-                            <button onClick={() => setServerSettingsTab('ROLES')} className={`w-full text-left px-3 py-2 rounded text-sm font-medium ${serverSettingsTab === 'ROLES' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}>Roles</button>
-                            <button onClick={() => setServerSettingsTab('EMOJIS')} className={`w-full text-left px-3 py-2 rounded text-sm font-medium ${serverSettingsTab === 'EMOJIS' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}>Emoji</button>
-                            <button onClick={() => setServerSettingsTab('AUDIT_LOG')} className={`w-full text-left px-3 py-2 rounded text-sm font-medium ${serverSettingsTab === 'AUDIT_LOG' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}>Audit Log</button>
-                            <div className="h-px bg-slate-800 my-2"></div>
-                            <button className="w-full text-left px-3 py-2 rounded text-sm font-medium text-red-400 hover:bg-red-500/10 flex items-center gap-2">
-                                <Trash2 size={14} /> Delete Server
-                            </button>
-                        </div>
-                    </div>
-                    <div className="flex-1 p-0 overflow-hidden flex flex-col">
-                        <div className="p-8 pb-0">
-                            <h2 className="text-2xl font-bold text-white mb-6">
-                                {serverSettingsTab === 'OVERVIEW' && 'Server Overview'}
-                                {serverSettingsTab === 'ROLES' && 'Roles'}
-                                {serverSettingsTab === 'EMOJIS' && 'Emoji'}
-                                {serverSettingsTab === 'AUDIT_LOG' && 'Audit Log'}
-                            </h2>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto custom-scrollbar px-8 pb-8">
-                            {serverSettingsTab === 'OVERVIEW' && (
-                                <div className="space-y-8 animate-fade-in max-w-2xl mx-auto">
-                                    {/* Banner Section */}
-                                    <div className="relative mb-10">
-                                        <div className="group rounded-xl overflow-hidden h-32 bg-slate-800 border-2 border-dashed border-slate-700 flex items-center justify-center cursor-pointer hover:border-nexus-accent transition-colors relative" onClick={() => bannerInputRef.current?.click()}>
-                                            {activeServer.banner ? (
-                                                <img src={activeServer.banner} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="flex flex-col items-center text-slate-500 group-hover:text-nexus-accent">
-                                                    <ImageIcon size={32} className="mb-2" />
-                                                    <span className="text-xs font-bold uppercase">Upload Banner</span>
-                                                </div>
-                                            )}
-                                            <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={handleServerBannerUpload} />
-                                        </div>
-                                        
-                                        {/* Icon Overlay */}
-                                        <div className="absolute -bottom-6 left-6 w-20 h-20 rounded-full border-4 border-slate-800 bg-slate-700 z-10 shadow-xl overflow-hidden group/icon cursor-pointer" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
-                                            <img src={activeServer.icon} className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/icon:opacity-100 flex items-center justify-center transition-opacity">
-                                                <Camera size={20} className="text-white" />
-                                            </div>
-                                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleServerIconUpload} />
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="mt-8 grid grid-cols-2 gap-6">
-                                        <div className="col-span-2">
-                                            <Input label="Server Name" value={activeServer.name} onChange={(e: any) => handleUpdateServer({ name: e.target.value })} />
-                                        </div>
-                                        
-                                        <div>
-                                            <Select 
-                                                label="Region"
-                                                value={activeServer.region} 
-                                                onChange={(e: any) => handleUpdateServer({ region: e.target.value })}
-                                                options={[
-                                                    { label: 'US East', value: 'US East' },
-                                                    { label: 'US West', value: 'US West' },
-                                                    { label: 'EU West', value: 'EU West' },
-                                                    { label: 'Asia', value: 'Asia' },
-                                                ]}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Status</label>
-                                            <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-300">
-                                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                                <span>Operational</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 space-y-4">
-                                        <h4 className="text-sm font-bold text-white flex items-center gap-2"><Settings size={14}/> Widget Settings</h4>
-                                        
-                                        <div>
-                                            <Select 
-                                                label="System Messages Channel"
-                                                value={activeServer.systemChannelId || ''} 
-                                                onChange={(e: any) => handleUpdateServer({ systemChannelId: e.target.value })}
-                                                options={[
-                                                    { label: 'No System Messages', value: '' },
-                                                    ...activeServer.channels.filter(c => c.type === 'TEXT').map(c => ({ label: `#${c.name}`, value: c.id }))
-                                                ]}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <Select 
-                                                label="AFK Voice Channel"
-                                                value={activeServer.afkChannelId || ''} 
-                                                onChange={(e: any) => handleUpdateServer({ afkChannelId: e.target.value })}
-                                                options={[
-                                                    { label: 'No AFK Channel', value: '' },
-                                                    ...activeServer.channels.filter(c => c.type === 'VOICE').map(c => ({ label: `🔊 ${c.name}`, value: c.id }))
-                                                ]}
-                                            />
-                                        </div>
-
-                                        <div className="flex items-center justify-between pt-2">
-                                            <div>
-                                                <div className="text-sm font-medium text-white">Default Notification Settings</div>
-                                                <div className="text-xs text-slate-500">All messages vs mentions only</div>
-                                            </div>
-                                            <Switch checked={true} onChange={() => {}} />
-                                        </div>
-                                    </div>
-
-                                    {/* Invite Link Widget */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Invite Link</label>
-                                        <div className="flex gap-2">
-                                            <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-nexus-glow font-mono flex items-center justify-between">
-                                                <span>nexus.gg/{activeServer.id.slice(0,8)}</span>
-                                                <button className="text-slate-500 hover:text-white" title="Copy"><Copy size={14}/></button>
-                                            </div>
-                                            <Button variant="secondary" className="text-xs">Regenerate</Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {serverSettingsTab === 'ROLES' && (
-                                <div className="flex h-full gap-4 animate-fade-in pb-4">
-                                    {/* Roles List Sidebar */}
-                                    <div className="w-48 bg-slate-950/50 rounded-lg border border-slate-700/50 flex flex-col overflow-hidden">
-                                        <div className="p-3 bg-slate-900 border-b border-slate-700 flex justify-between items-center">
-                                            <span className="text-xs font-bold text-slate-400 uppercase">Roles</span>
-                                            <button className="text-nexus-accent hover:text-white" title="Create Role"><Plus size={14}/></button>
-                                        </div>
-                                        <div className="overflow-y-auto custom-scrollbar p-2 space-y-1">
-                                            {activeServer.roles?.map(role => (
-                                                <div 
-                                                    key={role.id}
-                                                    onClick={() => setSelectedRoleId(role.id)}
-                                                    className={`flex items-center justify-between p-2 rounded cursor-pointer text-sm font-medium group transition-colors ${selectedRoleId === role.id ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
-                                                >
-                                                    <div className="flex items-center gap-2 truncate">
-                                                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: role.color }}></div>
-                                                        <span className="truncate">{role.name}</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Role Details */}
-                                    <div className="flex-1 flex flex-col">
-                                        {selectedRoleId && activeServer.roles ? (
-                                            <>
-                                                <div className="mb-6 flex gap-1 bg-slate-800 p-1 rounded-lg w-fit">
-                                                    <button onClick={() => setRoleTab('DISPLAY')} className={`px-4 py-1.5 rounded text-xs font-bold transition-colors ${roleTab === 'DISPLAY' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Display</button>
-                                                    <button onClick={() => setRoleTab('PERMISSIONS')} className={`px-4 py-1.5 rounded text-xs font-bold transition-colors ${roleTab === 'PERMISSIONS' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Permissions</button>
-                                                    <button onClick={() => setRoleTab('MEMBERS')} className={`px-4 py-1.5 rounded text-xs font-bold transition-colors ${roleTab === 'MEMBERS' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Manage Members</button>
-                                                </div>
-
-                                                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                                                    {roleTab === 'DISPLAY' && (
-                                                        <div className="space-y-6 animate-fade-in">
-                                                            <div className="max-w-md space-y-4">
-                                                                <Input label="Role Name" value={activeServer.roles.find(r => r.id === selectedRoleId)?.name} />
-                                                                
-                                                                <div>
-                                                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Role Color</label>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="w-16 h-10 rounded border border-slate-700" style={{ backgroundColor: activeServer.roles.find(r => r.id === selectedRoleId)?.color }}></div>
-                                                                        <div className="flex-1 grid grid-cols-6 gap-2">
-                                                                            {['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#64748b'].map(color => (
-                                                                                <button key={color} className="w-6 h-6 rounded-full hover:scale-110 transition-transform ring-1 ring-white/10" style={{ backgroundColor: color }} />
-                                                                            ))}
-                                                                            <button className="w-6 h-6 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 hover:text-white"><Settings size={12}/></button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="h-px bg-slate-700 my-4" />
-
-                                                            <div className="space-y-4">
-                                                                <div className="flex items-center justify-between">
-                                                                    <div>
-                                                                        <div className="text-sm font-bold text-white">Display role members separately</div>
-                                                                        <div className="text-xs text-slate-500">Members will be grouped by this role in the member list.</div>
-                                                                    </div>
-                                                                    <Switch checked={activeServer.roles.find(r => r.id === selectedRoleId)?.isHoisted} />
-                                                                </div>
-                                                                <div className="flex items-center justify-between">
-                                                                    <div>
-                                                                        <div className="text-sm font-bold text-white">Allow anyone to @mention this role</div>
-                                                                        <div className="text-xs text-slate-500">Members can use @{activeServer.roles.find(r => r.id === selectedRoleId)?.name} to notify all members.</div>
-                                                                    </div>
-                                                                    <Switch checked={false} />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {roleTab === 'PERMISSIONS' && (
-                                                        <div className="space-y-8 animate-fade-in">
-                                                            <div className="relative">
-                                                                <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
-                                                                <input className="w-full bg-slate-950 border border-slate-800 rounded px-10 py-2 text-sm text-slate-200 focus:outline-none focus:border-nexus-accent" placeholder="Search permissions..." />
-                                                            </div>
-                                                            
-                                                            {PERMISSION_GROUPS.map((group, idx) => (
-                                                                <div key={idx} className="space-y-4">
-                                                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-800 pb-1">{group.name}</h3>
-                                                                    {group.perms.map(perm => {
-                                                                       const role = activeServer.roles?.find(r => r.id === selectedRoleId);
-                                                                       const hasPerm = role?.permissions?.includes(perm.id) || role?.permissions?.includes('ADMINISTRATOR');
-                                                                       return (
-                                                                         <div key={perm.id} className="flex items-center justify-between py-1">
-                                                                             <div className="pr-4">
-                                                                                 <div className="text-sm font-bold text-slate-200">{perm.label}</div>
-                                                                                 <div className="text-xs text-slate-500">{perm.desc}</div>
-                                                                             </div>
-                                                                             <Switch checked={!!hasPerm} />
-                                                                         </div>
-                                                                       );
-                                                                    })}
-                                                                </div>
-                                                            ))}
-                                                            
-                                                            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between mt-8">
-                                                                <div>
-                                                                    <div className="text-sm font-bold text-red-400 flex items-center gap-2"><Shield size={14} /> Administrator</div>
-                                                                    <div className="text-xs text-red-300/70">Members with this permission have every permission and can bypass channel specific permissions.</div>
-                                                                </div>
-                                                                <Switch checked={activeServer.roles?.find(r => r.id === selectedRoleId)?.permissions?.includes('ADMINISTRATOR')} />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    
-                                                    {roleTab === 'MEMBERS' && (
-                                                        <div className="animate-fade-in">
-                                                            <div className="flex items-center justify-between mb-4 bg-slate-800 p-3 rounded-lg">
-                                                                <div className="text-sm text-slate-300">
-                                                                    Members with this role: <span className="font-bold text-white">0</span>
-                                                                </div>
-                                                                <Button variant="secondary" className="text-xs h-8">Add Members</Button>
-                                                            </div>
-                                                            <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-                                                                <Users size={48} className="mb-4 opacity-20" />
-                                                                <p className="text-sm">No members assigned to this role yet.</p>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full text-slate-500">Select a role to edit</div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {serverSettingsTab === 'EMOJIS' && (
-                                <div className="space-y-6 animate-fade-in h-full flex flex-col">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex gap-4">
-                                            <button 
-                                                onClick={() => setEmojiTab('EMOJI')}
-                                                className={`pb-2 text-sm font-bold transition-colors border-b-2 ${emojiTab === 'EMOJI' ? 'border-nexus-accent text-white' : 'border-transparent text-slate-400 hover:text-white'}`}
-                                            >
-                                                Emoji
-                                            </button>
-                                            <button 
-                                                onClick={() => setEmojiTab('STICKERS')}
-                                                className={`pb-2 text-sm font-bold transition-colors border-b-2 ${emojiTab === 'STICKERS' ? 'border-nexus-accent text-white' : 'border-transparent text-slate-400 hover:text-white'}`}
-                                            >
-                                                Stickers
-                                            </button>
-                                        </div>
-                                        <div className="text-xs font-mono text-slate-500">
-                                            Slots Used: <span className="text-white font-bold">{activeServer.emojis?.length || 0}</span> / 50
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-nexus-accent hover:bg-slate-800 transition-all group">
-                                        <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                            <Upload size={24} className="text-slate-400 group-hover:text-nexus-accent transition-colors" />
-                                        </div>
-                                        <h3 className="text-sm font-bold text-white">Upload {emojiTab === 'EMOJI' ? 'Emoji' : 'Sticker'}</h3>
-                                        <p className="text-xs text-slate-400 mt-1">256KB max size. JPG, PNG, GIF</p>
-                                    </div>
-                                    
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                        {emojiTab === 'EMOJI' ? (
-                                            <>
-                                                {(!activeServer.emojis || activeServer.emojis.length === 0) ? (
-                                                    <div className="flex flex-col items-center justify-center h-48 text-slate-500">
-                                                        <Smile size={32} className="mb-2 opacity-20" />
-                                                        <p className="text-sm">No custom emojis yet.</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                        {activeServer.emojis.map(emoji => (
-                                                            <div key={emoji.id} className="flex items-center gap-3 p-2 bg-slate-800/50 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-600 transition-all group">
-                                                                <img src={emoji.url} alt={emoji.name} className="w-8 h-8 object-contain" />
-                                                                <div className="min-w-0 flex-1">
-                                                                    <div className="text-xs font-bold text-white truncate">:{emoji.name}:</div>
-                                                                    <div className="text-[10px] text-slate-500 truncate">by {MOCK_USERS.find(u => u.id === emoji.creatorId)?.username || 'User'}</div>
-                                                                </div>
-                                                                <button className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center h-48 text-slate-500">
-                                                <div className="w-16 h-16 bg-slate-800/50 rounded-lg flex items-center justify-center mb-3">
-                                                    <ImageIcon size={32} className="opacity-20" />
-                                                </div>
-                                                <p className="text-sm mb-2">No stickers uploaded.</p>
-                                                <Button variant="secondary" className="text-xs">Browse Shop</Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {serverSettingsTab === 'AUDIT_LOG' && (
-                                <div className="space-y-4 animate-fade-in h-full flex flex-col">
-                                    <div className="flex flex-wrap gap-2 mb-2 p-3 bg-slate-900/50 rounded-lg border border-slate-800">
-                                        <div className="relative flex-1 min-w-[200px]">
-                                            <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
-                                            <input 
-                                                className="w-full bg-slate-950 border border-slate-700 rounded pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-nexus-accent" 
-                                                placeholder="Search logs..." 
-                                            />
-                                        </div>
-                                        <div className="relative w-40">
-                                            <select 
-                                                className="w-full bg-slate-950 border border-slate-700 rounded pl-2 pr-8 py-2 text-xs text-slate-300 focus:outline-none focus:border-nexus-accent appearance-none"
-                                                value={auditFilterUser}
-                                                onChange={(e) => setAuditFilterUser(e.target.value)}
-                                            >
-                                                <option value="">All Users</option>
-                                                <option value="1">Kaelthas</option>
-                                                <option value="Nexus AI">Nexus AI</option>
-                                            </select>
-                                            <ChevronDown size={14} className="absolute right-2 top-2.5 text-slate-500 pointer-events-none" />
-                                        </div>
-                                        <div className="relative w-40">
-                                             <select 
-                                                className="w-full bg-slate-950 border border-slate-700 rounded pl-2 pr-8 py-2 text-xs text-slate-300 focus:outline-none focus:border-nexus-accent appearance-none"
-                                                value={auditFilterAction}
-                                                onChange={(e) => setAuditFilterAction(e.target.value)}
-                                            >
-                                                <option value="">All Actions</option>
-                                                <option value="CREATE">Creation</option>
-                                                <option value="UPDATE">Updates</option>
-                                                <option value="DELETE">Deletions</option>
-                                            </select>
-                                            <ChevronDown size={14} className="absolute right-2 top-2.5 text-slate-500 pointer-events-none" />
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pb-4">
-                                        {MOCK_AUDIT_LOGS.map(log => {
-                                            const isCreate = log.action.includes('CREATE') || log.action.includes('ADD');
-                                            const isDelete = log.action.includes('DELETE') || log.action.includes('REMOVE') || log.action.includes('BAN') || log.action.includes('KICK');
-                                            const colorClass = isCreate ? 'text-green-400 bg-green-500/10' : isDelete ? 'text-red-400 bg-red-500/10' : 'text-blue-400 bg-blue-500/10';
-                                            const Icon = isCreate ? Plus : isDelete ? Trash2 : FileText;
-
-                                            return (
-                                                <div key={log.id} className="flex items-start gap-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 hover:bg-slate-800 transition-colors group">
-                                                     <div className={`p-2 rounded-full mt-1 flex-shrink-0 ${colorClass}`}>
-                                                         <Icon size={14} />
-                                                     </div>
-                                                     <div className="flex-1 min-w-0">
-                                                         <div className="flex items-center gap-2 mb-1">
-                                                             <span className="font-bold text-nexus-accent text-sm hover:underline cursor-pointer">
-                                                                {MOCK_USERS.find(u => u.id === log.userId)?.username || log.userId}
-                                                             </span>
-                                                             <span className="text-xs text-slate-400">
-                                                                {log.action.replace(/_/g, ' ').toLowerCase()}
-                                                             </span>
-                                                             <span className="font-bold text-white text-sm">
-                                                                {log.targetType?.toLowerCase()}
-                                                             </span>
-                                                         </div>
-                                                         {log.details && (
-                                                             <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded border border-slate-800 font-mono">
-                                                                 {log.details}
-                                                             </div>
-                                                         )}
-                                                     </div>
-                                                     <div className="flex flex-col items-end gap-1">
-                                                         <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1">
-                                                             <Clock size={10} />
-                                                             {log.timestamp.toLocaleDateString()}
-                                                         </div>
-                                                         <div className="text-[10px] text-slate-600">ID: {log.id}</div>
-                                                     </div>
-                                                </div>
-                                            );
-                                        })}
-                                        <div className="text-center pt-4">
-                                            <Button variant="ghost" className="text-xs text-slate-500"><Download size={14} className="mr-2"/> Export Logs</Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
                         </div>
                     </div>
                 </div>
