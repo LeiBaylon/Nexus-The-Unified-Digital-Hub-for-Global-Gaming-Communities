@@ -64,6 +64,16 @@ export const MOCK_SERVERS: Server[] = [
     id: 'nexus-home',
     name: 'Nexus HQ',
     icon: 'https://picsum.photos/id/100/100/100',
+    region: 'US East',
+    roles: [
+      { id: 'r1', name: 'Admin', color: '#ef4444', isHoisted: true },
+      { id: 'r2', name: 'Moderator', color: '#3b82f6', isHoisted: true },
+      { id: 'r3', name: 'Member', color: '#22c55e', isHoisted: false }
+    ],
+    emojis: [
+      { id: 'e1', name: 'nexus_pog', url: 'https://picsum.photos/id/30/32/32' },
+      { id: 'e2', name: 'nexus_hype', url: 'https://picsum.photos/id/31/32/32' }
+    ],
     channels: [
       { id: 'gen', name: 'general', type: 'TEXT' },
       { id: 'lfg', name: 'looking-for-group', type: 'TEXT' },
@@ -76,6 +86,11 @@ export const MOCK_SERVERS: Server[] = [
     id: 'val-server',
     name: 'Valorant Elites',
     icon: 'https://picsum.photos/id/101/100/100',
+    region: 'EU West',
+    roles: [
+      { id: 'vr1', name: 'Radiant', color: '#fbbf24', isHoisted: true },
+      { id: 'vr2', name: 'Agent', color: '#94a3b8', isHoisted: false }
+    ],
     channels: [
       { id: 'val-gen', name: 'general', type: 'TEXT' },
       { id: 'val-strats', name: 'strats', type: 'TEXT' },
@@ -86,6 +101,8 @@ export const MOCK_SERVERS: Server[] = [
     id: 'mmorpg',
     name: 'MMO Legends',
     icon: 'https://picsum.photos/id/102/100/100',
+    region: 'US West',
+    roles: [{ id: 'mr1', name: 'Guild Master', color: '#f59e0b', isHoisted: true }],
     channels: [
       { id: 'mmo-gen', name: 'tavern', type: 'TEXT' },
       { id: 'mmo-raid', name: 'raid-planning', type: 'TEXT' },

@@ -63,11 +63,27 @@ export interface Channel {
   unreadCount?: number;
 }
 
+export interface Role {
+  id: string;
+  name: string;
+  color: string;
+  isHoisted?: boolean;
+}
+
+export interface ServerEmoji {
+  id: string;
+  name: string;
+  url: string;
+}
+
 export interface Server {
   id: string;
   name: string;
   icon: string;
   channels: Channel[];
+  region?: string;
+  roles?: Role[];
+  emojis?: ServerEmoji[];
 }
 
 export interface MusicTrack {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ServerSidebar, ChannelSidebar } from './Sidebars';
 import { ChatInterface } from './ChatInterface';
@@ -5,8 +6,8 @@ import { GamingHub } from './GamingHub';
 import Profile from './Profile';
 import { Modal, Button, Badge, Input, Switch, Keycap, RadioCard, ConfirmModal } from './UIComponents';
 import { MOCK_SERVERS, MOCK_USERS, INITIAL_MESSAGES, LOOT_ITEMS, NOTIFICATION_SOUNDS } from '../constants';
-import { User, Message, SoundEffect, InventoryItem, Server } from '../types';
-import { Gift, Shield, User as UserIcon, Keyboard, Palette, LogOut, Check, Plus, UploadCloud, Monitor, RefreshCw, X, Volume2 } from 'lucide-react';
+import { User, Message, SoundEffect, InventoryItem, Server, Role, ServerEmoji, Channel } from '../types';
+import { Gift, Shield, User as UserIcon, Keyboard, Palette, LogOut, Check, Plus, UploadCloud, Monitor, RefreshCw, X, Volume2, Smile, Globe, Ban, Trash2, Lock, Users, Swords, Coffee, Gamepad2 } from 'lucide-react';
 
 interface DashboardProps {
   currentUser: User;
@@ -49,6 +50,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
   const [isLootModalOpen, setIsLootModalOpen] = useState(false);
   const [isCreateServerOpen, setIsCreateServerOpen] = useState(false);
   const [isServerSettingsOpen, setIsServerSettingsOpen] = useState(false);
+  const [serverSettingsTab, setServerSettingsTab] = useState<'OVERVIEW' | 'ROLES' | 'EMOJIS' | 'BANS'>('OVERVIEW');
   const [serverToDelete, setServerToDelete] = useState<string | null>(null);
 
   const [viewingProfile, setViewingProfile] = useState<User | null>(null);
@@ -60,10 +62,19 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
 
   // Create Server Form State
   const [newServerName, setNewServerName] = useState('');
+  const [newServerRegion, setNewServerRegion] = useState('US East');
+  const [newServerTemplate, setNewServerTemplate] = useState<'GAMING' | 'SOCIAL' | 'CLAN'>('GAMING');
+  const [newServerPrivacy, setNewServerPrivacy] = useState<'PUBLIC' | 'PRIVATE'>('PRIVATE');
   
   // Loot State
   const [openingLoot, setOpeningLoot] = useState(false);
   const [lootResult, setLootResult] = useState<InventoryItem | null>(null);
+
+  // Mock Bans Data (Local state for demo)
+  const [bannedUsers, setBannedUsers] = useState([
+     { id: 'b1', username: 'ToxicPlayer1', reason: 'Harassment', date: '2024-10-15' },
+     { id: 'b2', username: 'SpamBot9000', reason: 'Spamming', date: '2024-10-18' }
+  ]);
 
   // Sound Effect Logic
   const isMounted = useRef(false);
@@ -97,11 +108,28 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
   }, [messages, currentUser.id, currentUser.username, preferences]);
 
   const activeServer = servers.find(s => s.id === activeServerId);
-  const activeChannel = activeServer?.channels.find(c => c.id === activeChannelId) || {
-    id: activeChannelId,
-    name: activeServerId === 'home' ? 'Direct Message' : 'unknown',
-    type: 'TEXT'
-  };
+  
+  // Resolve Active Channel (Handle Server Channels vs Direct Messages)
+  const activeChannel = activeServer?.channels.find(c => c.id === activeChannelId) || (() => {
+      if (activeServerId === 'home') {
+         // Try to find if activeChannelId matches a user for DM
+         const dmUser = MOCK_USERS.find(u => u.id === activeChannelId);
+         const channelName = dmUser 
+            ? `@${dmUser.username}` 
+            : (activeChannelId === 'dm-nexus' || activeChannelId === '4' ? 'Nexus AI' : 'Direct Message');
+            
+         return {
+            id: activeChannelId,
+            name: channelName,
+            type: 'TEXT'
+         } as Channel;
+      }
+      return {
+         id: activeChannelId,
+         name: 'unknown',
+         type: 'TEXT'
+      } as Channel;
+  })();
 
   const handleSendMessage = (msg: Message) => {
     setMessages(prev => [...prev, msg]);
@@ -196,19 +224,52 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
     e.preventDefault();
     if (!newServerName.trim()) return;
 
+    let initialChannels: any[] = [];
+    let initialRoles: any[] = [{ id: `r-${Date.now()}-1`, name: 'Owner', color: '#ef4444', isHoisted: true }];
+
+    // Template Logic
+    if (newServerTemplate === 'GAMING') {
+        initialChannels = [
+            { id: `c-${Date.now()}-1`, name: 'general', type: 'TEXT' },
+            { id: `c-${Date.now()}-2`, name: 'clips', type: 'TEXT' },
+            { id: `c-${Date.now()}-3`, name: 'ranked-lfg', type: 'TEXT' },
+            { id: `c-${Date.now()}-4`, name: 'Lobby', type: 'VOICE' },
+            { id: `c-${Date.now()}-5`, name: 'Ranked', type: 'VOICE' },
+        ];
+        initialRoles.push({ id: `r-${Date.now()}-2`, name: 'Gamer', color: '#3b82f6' });
+    } else if (newServerTemplate === 'SOCIAL') {
+        initialChannels = [
+            { id: `c-${Date.now()}-1`, name: 'lounge', type: 'TEXT' },
+            { id: `c-${Date.now()}-2`, name: 'music', type: 'TEXT' },
+            { id: `c-${Date.now()}-3`, name: 'memes', type: 'TEXT' },
+            { id: `c-${Date.now()}-4`, name: 'Voice Chat', type: 'VOICE' },
+        ];
+        initialRoles.push({ id: `r-${Date.now()}-2`, name: 'Friend', color: '#22c55e' });
+    } else if (newServerTemplate === 'CLAN') {
+         initialChannels = [
+            { id: `c-${Date.now()}-1`, name: 'announcements', type: 'TEXT' },
+            { id: `c-${Date.now()}-2`, name: 'war-room', type: 'TEXT' },
+            { id: `c-${Date.now()}-3`, name: 'scrims', type: 'TEXT' },
+            { id: `c-${Date.now()}-4`, name: 'Meeting Room', type: 'VOICE' },
+            { id: `c-${Date.now()}-5`, name: 'Battle Station', type: 'VOICE' },
+        ];
+        initialRoles.push({ id: `r-${Date.now()}-2`, name: 'Officer', color: '#f59e0b', isHoisted: true });
+        initialRoles.push({ id: `r-${Date.now()}-3`, name: 'Recruit', color: '#94a3b8' });
+    }
+
     const newServer: Server = {
       id: `server-${Date.now()}`,
       name: newServerName,
       icon: `https://picsum.photos/seed/${Date.now()}/100/100`, // Random generic icon
-      channels: [
-        { id: `c-${Date.now()}-1`, name: 'general', type: 'TEXT' },
-        { id: `c-${Date.now()}-2`, name: 'clips', type: 'TEXT' },
-        { id: `c-${Date.now()}-3`, name: 'Lounge', type: 'VOICE' }
-      ]
+      channels: initialChannels,
+      region: newServerRegion,
+      roles: initialRoles
     };
 
     setServers([...servers, newServer]);
     setNewServerName('');
+    setNewServerRegion('US East');
+    setNewServerTemplate('GAMING');
     setIsCreateServerOpen(false);
     handleSelectServer(newServer.id);
   };
@@ -223,17 +284,41 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
      }
   };
 
+  const handleUpdateServer = (updates: Partial<Server>) => {
+     if (!activeServer) return;
+     setServers(prev => prev.map(s => s.id === activeServer.id ? { ...s, ...updates } : s));
+  };
+
+  const handleAddRole = () => {
+     if (!activeServer) return;
+     const newRole: Role = {
+        id: `role-${Date.now()}`,
+        name: 'New Role',
+        color: '#94a3b8'
+     };
+     handleUpdateServer({ roles: [...(activeServer.roles || []), newRole] });
+  };
+
+  const handleDeleteRole = (roleId: string) => {
+      if (!activeServer) return;
+      handleUpdateServer({ roles: activeServer.roles?.filter(r => r.id !== roleId) });
+  };
+
+  const handleUnban = (userId: string) => {
+      setBannedUsers(prev => prev.filter(u => u.id !== userId));
+  };
+
   const openProfile = (userId: string) => {
      const user = MOCK_USERS.find(u => u.id === userId) || (userId === currentUser.id ? currentUser : null);
      if (user) setViewingProfile(user);
   };
   
   const handleMessageUser = (userId: string) => {
-    // Navigate to home/DM view
+    // Navigate to home/DM view and select specific user
     setViewingProfile(null);
     setActiveServerId('home');
     setActiveView('CHAT');
-    setActiveChannelId('dm-nexus');
+    setActiveChannelId(userId);
   };
 
   // Mock Rebind Function
@@ -266,7 +351,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                currentUser={currentUser}
                onOpenSettings={() => { setIsSettingsOpen(true); setSettingsTab('PROFILE'); }}
                onOpenProfile={() => setViewingProfile(currentUser)}
-               onOpenServerSettings={() => setIsServerSettingsOpen(true)}
+               onOpenServerSettings={() => { setServerSettingsTab('OVERVIEW'); setIsServerSettingsOpen(true); }}
                users={MOCK_USERS}
             />
 
@@ -328,17 +413,17 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
          </div>
       </Modal>
 
-      {/* Create Server Modal */}
-      <Modal isOpen={isCreateServerOpen} onClose={() => setIsCreateServerOpen(false)} title="Create Your Server" size="sm">
+      {/* Create Server Modal - UPGRADED */}
+      <Modal isOpen={isCreateServerOpen} onClose={() => setIsCreateServerOpen(false)} title="Create Your Server" size="md">
         <form onSubmit={handleCreateServer} className="p-6 space-y-6">
           <div className="text-center mb-6">
-             <p className="text-slate-400 mb-4">Give your new server a personality with a name and an icon. You can always change it later.</p>
              <div className="w-24 h-24 bg-slate-800 rounded-full mx-auto flex items-center justify-center border-2 border-dashed border-slate-600 hover:border-nexus-accent cursor-pointer group transition-colors relative overflow-hidden">
                 <UploadCloud size={32} className="text-slate-500 group-hover:text-nexus-accent" />
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white">
                    UPLOAD
                 </div>
              </div>
+             <p className="text-slate-400 text-xs mt-3">Icons help users identify your server.</p>
           </div>
           
           <Input 
@@ -349,6 +434,67 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
             autoFocus
           />
 
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Server Template</label>
+            <div className="grid grid-cols-3 gap-3">
+               <div 
+                  onClick={() => setNewServerTemplate('GAMING')}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-2 text-center ${newServerTemplate === 'GAMING' ? 'bg-nexus-accent/20 border-nexus-accent text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
+               >
+                  <Gamepad2 size={24} className={newServerTemplate === 'GAMING' ? 'text-nexus-accent' : 'text-slate-500'} />
+                  <span className="text-xs font-bold">Gaming</span>
+               </div>
+               <div 
+                  onClick={() => setNewServerTemplate('SOCIAL')}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-2 text-center ${newServerTemplate === 'SOCIAL' ? 'bg-nexus-accent/20 border-nexus-accent text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
+               >
+                  <Coffee size={24} className={newServerTemplate === 'SOCIAL' ? 'text-nexus-accent' : 'text-slate-500'} />
+                  <span className="text-xs font-bold">Social</span>
+               </div>
+               <div 
+                  onClick={() => setNewServerTemplate('CLAN')}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-2 text-center ${newServerTemplate === 'CLAN' ? 'bg-nexus-accent/20 border-nexus-accent text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
+               >
+                  <Swords size={24} className={newServerTemplate === 'CLAN' ? 'text-nexus-accent' : 'text-slate-500'} />
+                  <span className="text-xs font-bold">Clan</span>
+               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Server Region</label>
+               <div className="relative">
+                  <select 
+                     className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-nexus-accent appearance-none cursor-pointer text-sm"
+                     value={newServerRegion}
+                     onChange={(e) => setNewServerRegion(e.target.value)}
+                  >
+                     <option value="US East">🇺🇸 US East</option>
+                     <option value="US West">🇺🇸 US West</option>
+                     <option value="EU West">🇪🇺 EU West</option>
+                     <option value="Asia">🇯🇵 Asia</option>
+                  </select>
+                  <Globe className="absolute right-3 top-2.5 text-slate-500 pointer-events-none" size={16} />
+               </div>
+            </div>
+
+             <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Privacy</label>
+                <div className="relative">
+                    <select 
+                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-nexus-accent appearance-none cursor-pointer text-sm"
+                        value={newServerPrivacy}
+                        onChange={(e) => setNewServerPrivacy(e.target.value as any)}
+                    >
+                        <option value="PRIVATE">Private (Invite Only)</option>
+                        <option value="PUBLIC">Public (Discoverable)</option>
+                    </select>
+                    <Lock className="absolute right-3 top-2.5 text-slate-500 pointer-events-none" size={16} />
+                </div>
+             </div>
+          </div>
+
           <div className="flex justify-end gap-3 pt-4">
              <Button type="button" variant="ghost" onClick={() => setIsCreateServerOpen(false)}>Cancel</Button>
              <Button type="submit" variant="primary" disabled={!newServerName.trim()}>Create Server</Button>
@@ -356,37 +502,172 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
         </form>
       </Modal>
 
-      {/* Server Settings Modal */}
-      <Modal isOpen={isServerSettingsOpen} onClose={() => setIsServerSettingsOpen(false)} title="Server Settings" size="sm">
-        <div className="p-6 space-y-6">
-           {activeServer ? (
-             <>
-               <div className="flex flex-col items-center gap-4 mb-4">
-                  <div className="w-20 h-20 rounded-full overflow-hidden ring-4 ring-slate-700 relative group cursor-pointer">
-                      <img src={activeServer.icon} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white">CHANGE</div>
-                  </div>
-                  <div className="text-center">
-                     <h3 className="text-xl font-bold text-white">{activeServer.name}</h3>
-                     <p className="text-xs text-slate-500">ID: {activeServer.id}</p>
-                  </div>
-               </div>
-               
-               <Input label="Server Name" defaultValue={activeServer.name} />
-               
-               <div className="pt-4 border-t border-slate-700">
-                  <h4 className="text-xs font-bold text-red-400 uppercase mb-2">Danger Zone</h4>
-                  <Button variant="danger" className="w-full" onClick={() => { setIsServerSettingsOpen(false); setServerToDelete(activeServer.id); }}>Delete Server</Button>
-               </div>
-             </>
-           ) : (
-             <p className="text-slate-400">No server selected.</p>
-           )}
-           <div className="flex justify-end gap-3 pt-4 border-t border-slate-700 mt-4">
+      {/* Server Settings Modal - UPGRADED */}
+      <Modal isOpen={isServerSettingsOpen} onClose={() => setIsServerSettingsOpen(false)} title="Server Settings" size="lg">
+        <div className="flex h-[500px]">
+           {/* Sidebar */}
+           <div className="w-48 border-r border-slate-700 py-2 pr-2 flex flex-col gap-1">
+              {['OVERVIEW', 'ROLES', 'EMOJIS', 'BANS'].map(tab => (
+                 <button
+                    key={tab}
+                    onClick={() => setServerSettingsTab(tab as any)}
+                    className={`text-left px-4 py-2 rounded font-bold text-sm transition-colors ${serverSettingsTab === tab ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
+                 >
+                    {tab.charAt(0) + tab.slice(1).toLowerCase()}
+                 </button>
+              ))}
+           </div>
+
+           {/* Content */}
+           <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+              {activeServer ? (
+                 <>
+                    {serverSettingsTab === 'OVERVIEW' && (
+                       <div className="space-y-6 animate-fade-in">
+                          <div className="flex gap-6 items-start">
+                              <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-slate-700 relative group cursor-pointer flex-shrink-0">
+                                 <img src={activeServer.icon} className="w-full h-full object-cover" />
+                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white">CHANGE</div>
+                              </div>
+                              <div className="flex-1 space-y-4">
+                                 <Input 
+                                    label="Server Name" 
+                                    defaultValue={activeServer.name} 
+                                    onChange={(e: any) => handleUpdateServer({ name: e.target.value })}
+                                 />
+                                 <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Server Region</label>
+                                    <div className="relative">
+                                       <select 
+                                          className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-nexus-accent appearance-none cursor-pointer"
+                                          defaultValue={activeServer.region || 'US East'}
+                                          onChange={(e) => handleUpdateServer({ region: e.target.value })}
+                                       >
+                                          <option value="US East">🇺🇸 US East</option>
+                                          <option value="US West">🇺🇸 US West</option>
+                                          <option value="EU West">🇪🇺 EU West</option>
+                                          <option value="Asia">🇯🇵 Asia</option>
+                                       </select>
+                                       <Globe className="absolute right-3 top-3 text-slate-500 pointer-events-none" size={16} />
+                                    </div>
+                                 </div>
+                              </div>
+                          </div>
+                          
+                          <div className="pt-8 border-t border-slate-700 mt-8">
+                             <h4 className="text-xs font-bold text-red-400 uppercase mb-4">Danger Zone</h4>
+                             <div className="border border-red-500/20 rounded-lg p-4 flex items-center justify-between">
+                                <div>
+                                   <div className="font-bold text-white">Delete Server</div>
+                                   <div className="text-xs text-slate-400">Permanently remove this server and all contents.</div>
+                                </div>
+                                <Button variant="danger" onClick={() => { setIsServerSettingsOpen(false); setServerToDelete(activeServer.id); }}>Delete Server</Button>
+                             </div>
+                          </div>
+                       </div>
+                    )}
+
+                    {serverSettingsTab === 'ROLES' && (
+                       <div className="space-y-4 animate-fade-in">
+                          <div className="flex justify-between items-center mb-4">
+                             <h3 className="font-bold text-white">Roles ({activeServer.roles?.length || 0})</h3>
+                             <Button variant="secondary" className="text-xs h-8" onClick={handleAddRole}><Plus size={14} /> Create Role</Button>
+                          </div>
+                          <div className="space-y-2">
+                             {activeServer.roles?.map(role => (
+                                <div key={role.id} className="flex items-center justify-between bg-slate-800 p-3 rounded-lg border border-slate-700 hover:border-nexus-accent transition-colors group">
+                                   <div className="flex items-center gap-3">
+                                      <div className="w-4 h-4 rounded-full border border-white/10" style={{ backgroundColor: role.color }}></div>
+                                      <span className="font-medium text-slate-200">{role.name}</span>
+                                   </div>
+                                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Edit Role"><Palette size={14} /></button>
+                                      <button 
+                                         className="p-2 hover:bg-red-500/20 rounded text-slate-400 hover:text-red-400" 
+                                         title="Delete Role"
+                                         onClick={() => handleDeleteRole(role.id)}
+                                      >
+                                         <Trash2 size={14} />
+                                      </button>
+                                   </div>
+                                </div>
+                             ))}
+                             {(!activeServer.roles || activeServer.roles.length === 0) && (
+                                <div className="text-center text-slate-500 py-8">No roles created.</div>
+                             )}
+                          </div>
+                       </div>
+                    )}
+
+                    {serverSettingsTab === 'EMOJIS' && (
+                       <div className="space-y-6 animate-fade-in">
+                          <div className="flex justify-between items-center">
+                             <div>
+                                <h3 className="font-bold text-white">Server Emojis</h3>
+                                <p className="text-xs text-slate-400">Upload custom emojis for your community.</p>
+                             </div>
+                             <Button variant="primary" className="text-xs h-8"><UploadCloud size={14} /> Upload Emoji</Button>
+                          </div>
+                          <div className="grid grid-cols-4 gap-4">
+                             {activeServer.emojis?.map(emoji => (
+                                <div key={emoji.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col items-center gap-2 hover:bg-slate-750 transition-colors group relative">
+                                   <img src={emoji.url} className="w-8 h-8 object-contain" />
+                                   <span className="text-xs font-mono text-slate-400">:{emoji.name}:</span>
+                                   <button className="absolute top-1 right-1 p-1 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <X size={12} />
+                                   </button>
+                                </div>
+                             ))}
+                             {/* Placeholder slots */}
+                             {[1,2,3,4].map(i => (
+                                <div key={i} className="bg-slate-800/30 border border-slate-700 border-dashed rounded-xl p-4 flex items-center justify-center opacity-50">
+                                   <Smile className="text-slate-600" />
+                                </div>
+                             ))}
+                          </div>
+                       </div>
+                    )}
+
+                    {serverSettingsTab === 'BANS' && (
+                       <div className="space-y-4 animate-fade-in">
+                          <h3 className="font-bold text-white mb-4">Banned Users</h3>
+                          {bannedUsers.length > 0 ? (
+                             bannedUsers.map(ban => (
+                                <div key={ban.id} className="flex items-center justify-between p-3 bg-slate-800 border border-slate-700 rounded-lg">
+                                   <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-slate-400">
+                                         <Ban size={20} />
+                                      </div>
+                                      <div>
+                                         <div className="font-bold text-white">{ban.username}</div>
+                                         <div className="text-xs text-red-400">Reason: {ban.reason}</div>
+                                      </div>
+                                   </div>
+                                   <Button variant="secondary" className="text-xs h-8" onClick={() => handleUnban(ban.id)}>Revoke Ban</Button>
+                                </div>
+                             ))
+                          ) : (
+                             <div className="text-center py-10 text-slate-500">
+                                <Shield size={48} className="mx-auto mb-4 opacity-20" />
+                                <p>No banned users. Good vibes only!</p>
+                             </div>
+                          )}
+                       </div>
+                    )}
+                 </>
+              ) : (
+                 <p className="text-slate-400">No server selected.</p>
+              )}
+           </div>
+        </div>
+        
+        {/* Footer actions for Modal (Common) */}
+        {serverSettingsTab === 'OVERVIEW' && (
+           <div className="flex justify-end gap-3 pt-4 border-t border-slate-700 mt-0 px-6 pb-6 bg-slate-800 rounded-b-2xl">
               <Button variant="ghost" onClick={() => setIsServerSettingsOpen(false)}>Cancel</Button>
               <Button variant="primary" onClick={() => setIsServerSettingsOpen(false)}>Save Changes</Button>
            </div>
-        </div>
+        )}
       </Modal>
       
       {/* Delete Server Confirm Modal */}

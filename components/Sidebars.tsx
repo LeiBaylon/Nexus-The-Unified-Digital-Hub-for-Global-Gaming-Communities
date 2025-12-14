@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Server, Channel, User, MusicTrack } from '../types';
-import { Avatar, ProgressBar } from './UIComponents';
+import { Avatar, ProgressBar, ConfirmModal } from './UIComponents';
 import { Hash, Volume2, Mic, MicOff, Headphones, VolumeX, Settings, Plus, Play, Pause, SkipForward, Disc, Trophy, Globe } from 'lucide-react';
 import { MUSIC_TRACKS } from '../constants';
 
@@ -133,6 +133,7 @@ interface ChannelSidebarProps {
 export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeChannelId, onSelectChannel, currentUser, onOpenSettings, onOpenProfile, onOpenServerSettings, users = [] }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
+  const [pendingVoiceChannel, setPendingVoiceChannel] = useState<Channel | null>(null);
 
   const handleToggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -149,8 +150,20 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
     }
   };
 
+  const handleVoiceClick = (channel: Channel) => {
+    if (activeChannelId === channel.id) return; // Already in this channel
+    setPendingVoiceChannel(channel);
+  };
+
+  const confirmJoinVoice = () => {
+    if (pendingVoiceChannel) {
+      onSelectChannel(pendingVoiceChannel.id);
+      setPendingVoiceChannel(null);
+    }
+  };
+
   return (
-    <div className="w-64 bg-slate-800/50 flex flex-col border-r border-slate-800 backdrop-blur-sm">
+    <div className="w-64 bg-slate-800/50 flex flex-col border-r border-slate-800 backdrop-blur-sm relative">
       {/* Header */}
       <div className="h-12 border-b border-slate-700 flex items-center justify-between px-4 font-bold shadow-sm cursor-pointer hover:bg-slate-700/30 transition-colors">
         <span className="truncate">{server ? server.name : 'Direct Messages'}</span>
@@ -198,7 +211,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
               {server.channels.filter(c => c.type === 'VOICE').map(channel => (
                 <div key={channel.id}>
                   <button
-                    onClick={() => onSelectChannel(channel.id)}
+                    onClick={() => handleVoiceClick(channel)}
                     className={`w-full flex items-center px-2 py-1.5 rounded-md group transition-all duration-300 ${
                       activeChannelId === channel.id 
                         ? 'bg-gradient-to-r from-slate-700 to-slate-700/50 text-white translate-x-1 shadow-[0_0_15px_rgba(139,92,246,0.15)] border-l-2 border-nexus-accent animate-pulse-glow' 
@@ -243,10 +256,14 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
           <div className="space-y-1">
              <h3 className="text-[10px] font-bold text-slate-500 uppercase px-2 mb-2 mt-2">Online</h3>
              {users.filter(u => u.id !== currentUser.id).map(user => (
-               <button key={user.id} className="w-full flex items-center gap-3 px-2 py-2 rounded-md hover:bg-slate-700/50 text-slate-300 group transition-colors">
+               <button 
+                  key={user.id} 
+                  onClick={() => onSelectChannel(user.id)}
+                  className={`w-full flex items-center gap-3 px-2 py-2 rounded-md transition-colors group ${activeChannelId === user.id ? 'bg-slate-700 text-white shadow-md border-l-2 border-nexus-accent' : 'hover:bg-slate-700/50 text-slate-300'}`}
+               >
                   <Avatar src={user.avatar} status={user.status} size="md" className="w-8 h-8" />
                   <div className="text-left overflow-hidden min-w-0 flex-1">
-                     <div className="font-bold truncate text-sm text-slate-200 group-hover:text-white">{user.username}</div>
+                     <div className={`font-bold truncate text-sm ${activeChannelId === user.id ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>{user.username}</div>
                      <div className="text-[10px] truncate flex items-center gap-1 font-medium">
                         {user.status === 'PLAYING' ? (
                            <span className="text-nexus-accent">Playing {user.gameActivity}</span>
@@ -320,6 +337,16 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
            </button>
         </div>
       </div>
+
+      <ConfirmModal 
+        isOpen={!!pendingVoiceChannel} 
+        onClose={() => setPendingVoiceChannel(null)} 
+        onConfirm={confirmJoinVoice}
+        title="Join Voice Channel"
+        message={`Are you sure you want to join ${pendingVoiceChannel?.name}? Your audio will be connected.`}
+        confirmText="Join"
+        variant="primary"
+      />
     </div>
   );
 };

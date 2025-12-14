@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { Button, Input, Modal } from './UIComponents';
 import { 
   Gamepad2, Zap, Cpu, Users, Shield, Globe, 
   Mic, MessageSquare, ChevronRight, Play, Star,
-  Headphones, Server, Command, Rocket, LogIn, Plus, Send, Hash, X, Bot, Check, CheckCircle
+  Headphones, Server, Command, Rocket, LogIn, Plus, Send, Hash, X, Bot, Check, CheckCircle, Loader2
 } from 'lucide-react';
 import { sendMessageToAI } from '../services/gemini';
 
@@ -12,6 +11,108 @@ interface LandingProps {
   onGetStarted: () => void;
   onLogin: () => void;
 }
+
+// --- Helper Components for Modals ---
+
+const DownloadModalContent = ({ onClose }: { onClose: () => void }) => {
+  const [status, setStatus] = useState<'IDLE' | 'DOWNLOADING' | 'DONE'>('IDLE');
+  const [platform, setPlatform] = useState('');
+
+  const handleDownload = (p: string) => {
+    setPlatform(p);
+    setStatus('DOWNLOADING');
+    setTimeout(() => {
+      setStatus('DONE');
+    }, 2000);
+  };
+
+  if (status === 'DOWNLOADING') {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-4 animate-fade-in min-h-[300px]">
+        <Loader2 className="w-12 h-12 text-nexus-accent animate-spin" />
+        <p className="text-xl font-bold text-white">Starting download for {platform}...</p>
+      </div>
+    );
+  }
+
+  if (status === 'DONE') {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-4 animate-scale-in min-h-[300px]">
+        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-4 ring-4 ring-green-500/10">
+            <CheckCircle className="w-10 h-10 text-green-500" />
+        </div>
+        <h3 className="text-2xl font-bold text-white">Download Started!</h3>
+        <p className="text-slate-400 text-center max-w-xs">Nexus is downloading to your system. See you in the lobby.</p>
+        <Button variant="primary" onClick={onClose} className="mt-6 w-full max-w-xs">Awesome</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 text-center animate-fade-in">
+        <p className="text-slate-300">Get Nexus for your desktop and mobile devices.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button onClick={() => handleDownload('Windows')} className="p-6 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-xl flex flex-col items-center gap-3 transition-colors group">
+                <div className="text-4xl group-hover:scale-110 transition-transform">🪟</div>
+                <div className="font-bold text-white">Windows</div>
+                <span className="text-xs text-slate-500">Win 10/11 (x64)</span>
+            </button>
+            <button onClick={() => handleDownload('macOS')} className="p-6 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-xl flex flex-col items-center gap-3 transition-colors group">
+                <div className="text-4xl group-hover:scale-110 transition-transform">🍎</div>
+                <div className="font-bold text-white">macOS</div>
+                <span className="text-xs text-slate-500">Apple Silicon / Intel</span>
+            </button>
+            <button onClick={() => handleDownload('Linux')} className="p-6 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-xl flex flex-col items-center gap-3 transition-colors group">
+                <div className="text-4xl group-hover:scale-110 transition-transform">🐧</div>
+                <div className="font-bold text-white">Linux</div>
+                <span className="text-xs text-slate-500">deb / rpm / AppImage</span>
+            </button>
+        </div>
+    </div>
+  );
+};
+
+const CareersModalContent = () => {
+    const [applying, setApplying] = useState<string | null>(null);
+    const [applied, setApplied] = useState<string[]>([]);
+
+    const handleApply = (job: string) => {
+        setApplying(job);
+        setTimeout(() => {
+            setApplied(prev => [...prev, job]);
+            setApplying(null);
+        }, 1500);
+    };
+
+    return (
+        <div className="space-y-4 animate-fade-in">
+             <p className="text-slate-300 mb-4">Join our mission to connect gamers worldwide.</p>
+             <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                 {['Senior Frontend Engineer', 'Backend Go Developer', 'DevOps Specialist', 'Product Designer', 'Community Manager', 'AI Research Scientist'].map(job => {
+                     const isApplied = applied.includes(job);
+                     const isApplying = applying === job;
+                     
+                     return (
+                         <div key={job} className={`flex justify-between items-center p-4 rounded-lg border transition-all duration-300 ${isApplied ? 'bg-green-500/5 border-green-500/20' : 'bg-slate-800 border-transparent hover:bg-slate-700'}`}>
+                             <div>
+                                 <div className={`font-bold transition-colors ${isApplied ? 'text-green-500' : 'text-white group-hover:text-nexus-accent'}`}>{job}</div>
+                                 <div className="text-xs text-slate-500">Remote • Full-time</div>
+                             </div>
+                             <Button 
+                                variant={isApplied ? "success" : "ghost"} 
+                                className={`text-xs min-w-[100px] ${!isApplied && !isApplying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}
+                                onClick={() => !isApplied && !isApplying && handleApply(job)}
+                                disabled={isApplied || isApplying}
+                             >
+                                {isApplying ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : isApplied ? 'Applied' : 'Apply'}
+                             </Button>
+                         </div>
+                     );
+                 })}
+             </div>
+        </div>
+    );
+};
 
 const Landing: React.FC<LandingProps> = ({ onGetStarted, onLogin }) => {
   const [scrolled, setScrolled] = useState(false);
@@ -64,28 +165,9 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted, onLogin }) => {
   const renderFooterModalContent = () => {
     switch(activeFooterModal) {
         case 'Download':
-            return (
-                <div className="space-y-6 text-center">
-                    <p className="text-slate-300">Get Nexus for your desktop and mobile devices.</p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <button className="p-6 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-xl flex flex-col items-center gap-3 transition-colors group">
-                            <div className="text-4xl group-hover:scale-110 transition-transform">🪟</div>
-                            <div className="font-bold text-white">Windows</div>
-                            <span className="text-xs text-slate-500">Win 10/11 (x64)</span>
-                        </button>
-                        <button className="p-6 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-xl flex flex-col items-center gap-3 transition-colors group">
-                            <div className="text-4xl group-hover:scale-110 transition-transform">🍎</div>
-                            <div className="font-bold text-white">macOS</div>
-                            <span className="text-xs text-slate-500">Apple Silicon / Intel</span>
-                        </button>
-                        <button className="p-6 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-xl flex flex-col items-center gap-3 transition-colors group">
-                            <div className="text-4xl group-hover:scale-110 transition-transform">🐧</div>
-                            <div className="font-bold text-white">Linux</div>
-                            <span className="text-xs text-slate-500">deb / rpm / AppImage</span>
-                        </button>
-                    </div>
-                </div>
-            );
+            return <DownloadModalContent onClose={() => setActiveFooterModal(null)} />;
+        case 'Careers':
+            return <CareersModalContent />;
         case 'Nitro Boost':
             return (
                 <div className="text-center space-y-6">
@@ -187,23 +269,6 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted, onLogin }) => {
                              <div className="font-bold text-2xl text-white">Global</div>
                              <div className="text-xs text-slate-500 font-bold uppercase">Coverage</div>
                          </div>
-                     </div>
-                 </div>
-             );
-        case 'Careers':
-             return (
-                 <div className="space-y-4">
-                     <p className="text-slate-300 mb-4">Join our mission to connect gamers worldwide.</p>
-                     <div className="space-y-2">
-                         {['Senior Frontend Engineer', 'Backend Go Developer', 'DevOps Specialist', 'Product Designer'].map(job => (
-                             <div key={job} className="flex justify-between items-center p-4 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer group">
-                                 <div>
-                                     <div className="font-bold text-white group-hover:text-nexus-accent transition-colors">{job}</div>
-                                     <div className="text-xs text-slate-500">Remote • Full-time</div>
-                                 </div>
-                                 <Button variant="ghost" className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">Apply</Button>
-                             </div>
-                         ))}
                      </div>
                  </div>
              );
