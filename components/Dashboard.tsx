@@ -6,10 +6,11 @@ import { ServerSidebar, ChannelSidebar } from './Sidebars';
 import { ChatInterface } from './ChatInterface';
 import { GamingHub } from './GamingHub';
 import Profile from './Profile';
-import { Modal, Button, Input, Switch, Tabs, Avatar, ConfirmModal, Select, RadioCard } from './UIComponents';
+import { Modal, Button, Input, Switch, Tabs, Avatar, ConfirmModal, Select, RadioCard, ProgressBar, Keycap } from './UIComponents';
 import { 
   Settings, LogOut, Plus, Trash2, X, Image as ImageIcon, Camera, Globe, Copy, 
-  Shield, Smile, Activity, Search, Save, Bell, Gamepad2, Users, GraduationCap, ChevronLeft
+  Shield, Smile, Activity, Search, Save, Bell, Gamepad2, Users, GraduationCap, ChevronLeft,
+  Mic, Volume2, Keyboard, Monitor, Laptop, MousePointer
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -28,6 +29,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
   const [showCreateServer, setShowCreateServer] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
+  const [userSettingsTab, setUserSettingsTab] = useState('MY_ACCOUNT');
 
   // Server Creation State
   const [createStep, setCreateStep] = useState(1);
@@ -367,21 +369,150 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
         <Modal isOpen={showUserSettings} onClose={() => setShowUserSettings(false)} title="User Settings" size="lg">
              <div className="flex h-[500px]">
                  <div className="w-48 border-r border-slate-700 p-2 space-y-1">
-                     <button className="w-full text-left px-3 py-2 rounded bg-nexus-accent text-white font-bold text-sm">My Account</button>
-                     <button className="w-full text-left px-3 py-2 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-sm">Privacy & Safety</button>
-                     <button className="w-full text-left px-3 py-2 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-sm">Authorized Apps</button>
+                     <button onClick={() => setUserSettingsTab('MY_ACCOUNT')} className={`w-full text-left px-3 py-2 rounded font-bold text-sm ${userSettingsTab === 'MY_ACCOUNT' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>My Account</button>
+                     <button onClick={() => setUserSettingsTab('PRIVACY')} className={`w-full text-left px-3 py-2 rounded text-sm ${userSettingsTab === 'PRIVACY' ? 'bg-nexus-accent text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>Privacy & Safety</button>
+                     <button onClick={() => setUserSettingsTab('APPS')} className={`w-full text-left px-3 py-2 rounded text-sm ${userSettingsTab === 'APPS' ? 'bg-nexus-accent text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>Authorized Apps</button>
                      <div className="h-px bg-slate-700 my-2"></div>
-                     <button className="w-full text-left px-3 py-2 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-sm">Voice & Video</button>
-                     <button className="w-full text-left px-3 py-2 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-sm">Notifications</button>
-                     <button className="w-full text-left px-3 py-2 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-sm">Keybinds</button>
+                     <button onClick={() => setUserSettingsTab('VOICE')} className={`w-full text-left px-3 py-2 rounded text-sm ${userSettingsTab === 'VOICE' ? 'bg-nexus-accent text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>Voice & Video</button>
+                     <button onClick={() => setUserSettingsTab('NOTIFICATIONS')} className={`w-full text-left px-3 py-2 rounded text-sm ${userSettingsTab === 'NOTIFICATIONS' ? 'bg-nexus-accent text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>Notifications</button>
+                     <button onClick={() => setUserSettingsTab('KEYBINDS')} className={`w-full text-left px-3 py-2 rounded text-sm ${userSettingsTab === 'KEYBINDS' ? 'bg-nexus-accent text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>Keybinds</button>
                      <div className="h-px bg-slate-700 my-2"></div>
                      <button onClick={onLogout} className="w-full text-left px-3 py-2 rounded hover:bg-red-500/10 text-red-400 text-sm flex items-center gap-2">
                          <LogOut size={14} /> Log Out
                      </button>
                  </div>
-                 <div className="flex-1 p-6 overflow-y-auto">
-                     <h3 className="text-lg font-bold text-white mb-6">My Account</h3>
-                     <Profile user={currentUser} isCurrentUser={true} />
+                 <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+                     {userSettingsTab === 'MY_ACCOUNT' && (
+                         <div className="animate-fade-in">
+                             <h3 className="text-lg font-bold text-white mb-6">My Account</h3>
+                             <Profile user={currentUser} isCurrentUser={true} />
+                         </div>
+                     )}
+                     
+                     {userSettingsTab === 'PRIVACY' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2">Privacy & Safety</h3>
+                            
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-bold text-slate-400 uppercase">Safe Direct Messaging</h4>
+                                <RadioCard title="Keep me safe" description="Scan direct messages from everyone." selected={true} onClick={()=>{}} color="bg-green-500" icon={<Shield size={20}/>} />
+                                <RadioCard title="My friends are nice" description="Scan direct messages from everyone unless they are a friend." selected={false} onClick={()=>{}} color="bg-yellow-500" icon={<Users size={20}/>} />
+                                <RadioCard title="I live on the edge" description="Do not scan direct messages. (Not recommended)" selected={false} onClick={()=>{}} color="bg-red-500" icon={<Activity size={20}/>} />
+                            </div>
+
+                            <div className="h-px bg-slate-800" />
+
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-bold text-slate-400 uppercase">Server Privacy Defaults</h4>
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm text-slate-200">Allow direct messages from server members</div>
+                                    <Switch checked={true} onChange={()=>{}} />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm text-slate-200">Allow joining game activity</div>
+                                    <Switch checked={true} onChange={()=>{}} />
+                                </div>
+                            </div>
+                        </div>
+                     )}
+
+                     {userSettingsTab === 'APPS' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2">Authorized Apps</h3>
+                            <div className="space-y-2">
+                                {[{name: 'Spotify', date: 'Oct 24, 2024'}, {name: 'Steam', date: 'Sep 12, 2024'}, {name: 'Twitch', date: 'Aug 05, 2024'}].map(app => (
+                                    <div key={app.name} className="flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700">
+                                        <div>
+                                            <div className="font-bold text-white">{app.name}</div>
+                                            <div className="text-xs text-slate-500">Authorized on {app.date}</div>
+                                        </div>
+                                        <Button variant="danger" className="py-1 px-3 text-xs">Deauthorize</Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                     )}
+
+                     {userSettingsTab === 'VOICE' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2">Voice & Video</h3>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <Select label="Input Device" options={[{label: 'Default - Microphone (Yeti Stereo)', value: 'default'}]} />
+                                <Select label="Output Device" options={[{label: 'Default - Headphones (HyperX Cloud)', value: 'default'}]} />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Input Volume</label>
+                                <ProgressBar value={75} max={100} className="h-2 bg-slate-800" />
+                            </div>
+                             <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Output Volume</label>
+                                <ProgressBar value={40} max={100} className="h-2 bg-slate-800" />
+                            </div>
+
+                            <div className="h-px bg-slate-800" />
+
+                            <h4 className="text-sm font-bold text-slate-400 uppercase">Video Settings</h4>
+                            <Select label="Camera" options={[{label: 'OBS Virtual Camera', value: 'obs'}, {label: 'Logitech Brio', value: 'brio'}]} />
+                            
+                            <div className="bg-black aspect-video rounded-lg flex items-center justify-center border border-slate-700">
+                                <div className="text-slate-500 text-sm flex items-center gap-2"><Camera size={16}/> Preview Hidden</div>
+                            </div>
+                        </div>
+                     )}
+
+                     {userSettingsTab === 'NOTIFICATIONS' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2">Notifications</h3>
+                            
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <div className="text-sm font-bold text-slate-200">Enable Desktop Notifications</div>
+                                        <div className="text-xs text-slate-500">Get a push notification when you're not looking.</div>
+                                    </div>
+                                    <Switch checked={true} onChange={()=>{}} />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <div className="text-sm font-bold text-slate-200">Enable Unread Message Badge</div>
+                                        <div className="text-xs text-slate-500">Show a red badge on the app icon.</div>
+                                    </div>
+                                    <Switch checked={true} onChange={()=>{}} />
+                                </div>
+                                 <div className="flex items-center justify-between">
+                                    <div>
+                                        <div className="text-sm font-bold text-slate-200">Text-to-Speech Notifications</div>
+                                        <div className="text-xs text-slate-500">Have a robot read your messages to you.</div>
+                                    </div>
+                                    <Switch checked={false} onChange={()=>{}} />
+                                </div>
+                            </div>
+                        </div>
+                     )}
+
+                     {userSettingsTab === 'KEYBINDS' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <h3 className="text-lg font-bold text-white border-b border-slate-700 pb-2">Keybinds</h3>
+                            
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
+                                    <span className="font-bold text-slate-300">Push to Talk</span>
+                                    <div className="flex gap-1"><Keycap>MOUSE4</Keycap></div>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
+                                    <span className="font-bold text-slate-300">Toggle Mute</span>
+                                    <div className="flex gap-1"><Keycap>CTRL</Keycap> <Keycap>SHIFT</Keycap> <Keycap>M</Keycap></div>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
+                                    <span className="font-bold text-slate-300">Toggle Deafen</span>
+                                    <div className="flex gap-1"><Keycap>CTRL</Keycap> <Keycap>SHIFT</Keycap> <Keycap>D</Keycap></div>
+                                </div>
+                                <Button variant="secondary" className="w-full text-xs dashed border-slate-600"><Plus size={14}/> Add Keybind</Button>
+                            </div>
+                        </div>
+                     )}
                  </div>
              </div>
         </Modal>
