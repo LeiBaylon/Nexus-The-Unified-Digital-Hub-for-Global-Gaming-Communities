@@ -377,37 +377,61 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
       {/* Daily Loot Button */}
       <button 
          onClick={() => setIsLootModalOpen(true)}
-         className="absolute bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full shadow-lg shadow-orange-500/30 flex items-center justify-center animate-bounce hover:scale-110 transition-transform z-30 group"
+         className="absolute bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-nexus-accent to-nexus-glow rounded-full shadow-lg shadow-nexus-accent/30 flex items-center justify-center animate-bounce hover:scale-110 transition-transform z-30 group"
       >
          <Gift className="text-white w-8 h-8 group-hover:rotate-12 transition-transform" />
       </button>
 
       {/* Loot Modal */}
       <Modal isOpen={isLootModalOpen} onClose={() => setIsLootModalOpen(false)} title="Daily Loot Drop">
-         <div className="flex flex-col items-center justify-center py-10 min-h-[300px]">
+         <div className="flex flex-col items-center justify-center py-12 min-h-[350px] relative overflow-hidden">
+            {/* Background Glow */}
+            <div className="absolute inset-0 bg-gradient-to-b from-nexus-accent/5 to-transparent pointer-events-none" />
+
             {!lootResult && !openingLoot && (
-               <>
-                  <Gift size={100} className="text-nexus-accent mb-8 animate-pulse" />
-                  <p className="text-xl text-center mb-8">You have a Legendary Lootbox waiting!</p>
-                  <Button onClick={handleOpenLoot} className="text-xl px-12 py-4">OPEN NOW</Button>
-               </>
+               <div className="flex flex-col items-center animate-fade-in z-10">
+                  <div className="mb-10 relative">
+                     <div className="absolute inset-0 bg-nexus-accent blur-3xl opacity-20 animate-pulse-slow rounded-full"></div>
+                     <Gift size={100} className="text-nexus-accent relative z-10 drop-shadow-[0_0_15px_rgba(139,92,246,0.5)] fill-nexus-accent/10" strokeWidth={1.5} />
+                  </div>
+                  <p className="text-xl text-center mb-10 text-slate-200 font-medium tracking-wide">You have a Legendary Lootbox waiting!</p>
+                  <Button 
+                    onClick={handleOpenLoot} 
+                    className="text-lg px-12 py-4 uppercase font-bold tracking-widest shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)]"
+                    variant="primary"
+                  >
+                    Open Now
+                  </Button>
+               </div>
             )}
             
             {openingLoot && (
-               <div className="animate-spin-slow">
-                  <div className="w-32 h-32 bg-nexus-glow blur-xl rounded-full absolute"></div>
-                  <Gift size={100} className="text-white relative z-10 animate-bounce" />
+               <div className="flex flex-col items-center justify-center z-10">
+                  <div className="relative animate-bounce">
+                      <div className="w-32 h-32 bg-nexus-glow blur-xl rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
+                      <Gift size={120} className="text-white relative z-10 animate-spin-slow" strokeWidth={1.5} />
+                  </div>
+                  <p className="mt-8 text-nexus-glow font-bold tracking-widest animate-pulse">OPENING...</p>
                </div>
             )}
 
             {lootResult && (
-               <div className="text-center animate-slide-up">
-                  <div className={`inline-flex p-6 rounded-full bg-slate-800 mb-6 ring-4 ${lootResult.rarity === 'LEGENDARY' ? 'ring-yellow-500 shadow-yellow-500/50' : 'ring-nexus-accent'}`}>
-                     <lootResult.icon size={64} className={lootResult.rarity === 'LEGENDARY' ? 'text-yellow-400' : 'text-nexus-accent'} />
+               <div className="flex flex-col items-center animate-scale-in z-10">
+                  <div className={`w-36 h-36 rounded-full border-4 flex items-center justify-center mb-6 shadow-2xl bg-slate-800/80 relative overflow-hidden ${lootResult.rarity === 'LEGENDARY' ? 'border-yellow-500 shadow-yellow-500/30' : 'border-nexus-accent shadow-nexus-accent/30'}`}>
+                     <div className={`absolute inset-0 opacity-20 ${lootResult.rarity === 'LEGENDARY' ? 'bg-yellow-500' : 'bg-nexus-accent'}`}></div>
+                     <lootResult.icon size={64} className={`relative z-10 ${lootResult.rarity === 'LEGENDARY' ? 'text-yellow-400' : 'text-nexus-accent'}`} />
                   </div>
-                  <h3 className="text-3xl font-bold text-white mb-2">{lootResult.name}</h3>
-                  <Badge color={lootResult.rarity === 'LEGENDARY' ? 'bg-yellow-500' : 'bg-nexus-accent'}>{lootResult.rarity}</Badge>
-                  <p className="mt-4 text-slate-400">Item added to your inventory.</p>
+                  
+                  <h3 className="text-3xl font-bold text-white mb-3 tracking-wide">{lootResult.name}</h3>
+                  
+                  <Badge 
+                    className="mb-8 px-3 py-1 text-xs" 
+                    color={lootResult.rarity === 'LEGENDARY' ? 'bg-yellow-500 text-black' : 'bg-nexus-accent'}
+                  >
+                    {lootResult.rarity}
+                  </Badge>
+                  
+                  <p className="text-slate-500 text-sm">Item added to your inventory.</p>
                </div>
             )}
          </div>
@@ -506,12 +530,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
       <Modal isOpen={isServerSettingsOpen} onClose={() => setIsServerSettingsOpen(false)} title="Server Settings" size="lg">
         <div className="flex h-[500px]">
            {/* Sidebar */}
-           <div className="w-48 border-r border-slate-700 py-2 pr-2 flex flex-col gap-1">
+           <div className="w-48 border-r border-slate-800 py-2 pr-2 flex flex-col gap-1">
               {['OVERVIEW', 'ROLES', 'EMOJIS', 'BANS'].map(tab => (
                  <button
                     key={tab}
                     onClick={() => setServerSettingsTab(tab as any)}
-                    className={`text-left px-4 py-2 rounded font-bold text-sm transition-colors ${serverSettingsTab === tab ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
+                    className={`text-left px-4 py-2 rounded font-bold text-sm transition-colors ${serverSettingsTab === tab ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}`}
                  >
                     {tab.charAt(0) + tab.slice(1).toLowerCase()}
                  </button>
@@ -525,7 +549,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                     {serverSettingsTab === 'OVERVIEW' && (
                        <div className="space-y-6 animate-fade-in">
                           <div className="flex gap-6 items-start">
-                              <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-slate-700 relative group cursor-pointer flex-shrink-0">
+                              <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-slate-800 relative group cursor-pointer flex-shrink-0">
                                  <img src={activeServer.icon} className="w-full h-full object-cover" />
                                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white">CHANGE</div>
                               </div>
@@ -554,7 +578,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                               </div>
                           </div>
                           
-                          <div className="pt-8 border-t border-slate-700 mt-8">
+                          <div className="pt-8 border-t border-slate-800 mt-8">
                              <h4 className="text-xs font-bold text-red-400 uppercase mb-4">Danger Zone</h4>
                              <div className="border border-red-500/20 rounded-lg p-4 flex items-center justify-between">
                                 <div>
@@ -663,7 +687,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
         
         {/* Footer actions for Modal (Common) */}
         {serverSettingsTab === 'OVERVIEW' && (
-           <div className="flex justify-end gap-3 pt-4 border-t border-slate-700 mt-0 px-6 pb-6 bg-slate-800 rounded-b-2xl">
+           <div className="flex justify-end gap-3 pt-4 border-t border-slate-800 mt-0 px-6 pb-6 bg-slate-900 rounded-b-xl">
               <Button variant="ghost" onClick={() => setIsServerSettingsOpen(false)}>Cancel</Button>
               <Button variant="primary" onClick={() => setIsServerSettingsOpen(false)}>Save Changes</Button>
            </div>
@@ -700,28 +724,28 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
       <Modal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} title="Nexus Settings" size="lg">
          <div className="flex gap-6 h-[500px]">
             {/* Settings Sidebar */}
-            <div className="w-48 flex flex-col gap-2 border-r border-slate-700 pr-4 py-2">
+            <div className="w-48 flex flex-col gap-2 border-r border-slate-800 pr-4 py-2">
                <button 
                   onClick={() => setSettingsTab('PROFILE')} 
-                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'PROFILE' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'}`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'PROFILE' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
                >
                   <UserIcon size={16} /> My Profile
                </button>
                <button 
                   onClick={() => setSettingsTab('APPEARANCE')} 
-                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'APPEARANCE' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'}`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'APPEARANCE' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
                >
                   <Palette size={16} /> Appearance
                </button>
                <button 
                   onClick={() => setSettingsTab('AUDIO')} 
-                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'AUDIO' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'}`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'AUDIO' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
                >
                   <Volume2 size={16} /> Audio & Notifications
                </button>
                <button 
                   onClick={() => setSettingsTab('KEYBINDS')} 
-                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'KEYBINDS' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'}`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'KEYBINDS' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
                >
                   <Keyboard size={16} /> Keybinds
                </button>
@@ -733,11 +757,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
             <div className="flex-1 space-y-6 overflow-y-auto pr-2 py-2 custom-scrollbar">
                {settingsTab === 'PROFILE' && (
                   <div className="space-y-4">
-                     <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Profile Settings</h3>
+                     <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-800 pb-2">Profile Settings</h3>
                      <p className="text-slate-400 text-sm">To edit your public profile, banner, or bio, please visit your Profile page directly.</p>
                      <Button onClick={() => { setIsSettingsOpen(false); openProfile(currentUser.id); }}>Go to My Profile</Button>
                      
-                     <h3 className="text-lg font-bold text-white mt-8 mb-4 border-b border-slate-700 pb-2">Account Status</h3>
+                     <h3 className="text-lg font-bold text-white mt-8 mb-4 border-b border-slate-800 pb-2">Account Status</h3>
                      <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
                         <div className="flex items-center gap-3">
                            <div className="w-12 h-12 bg-nexus-accent/20 rounded-full flex items-center justify-center text-nexus-accent">
@@ -813,7 +837,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
 
                {settingsTab === 'AUDIO' && (
                   <div className="space-y-6 animate-fade-in">
-                     <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Sound Settings</h3>
+                     <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-800 pb-2">Sound Settings</h3>
                      
                      <div className="space-y-4">
                         <Switch 
@@ -849,14 +873,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
 
                {settingsTab === 'KEYBINDS' && (
                   <div className="space-y-6 animate-fade-in">
-                     <div className="flex items-center justify-between border-b border-slate-700 pb-4">
+                     <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                         <h3 className="text-xl font-bold text-white">Keyboard Shortcuts</h3>
                         <Button variant="ghost" className="text-xs py-1">Reset Defaults</Button>
                      </div>
 
                      <div className="space-y-1">
                         {keybinds.map((kb) => (
-                           <div key={kb.id} className="flex items-center justify-between p-3 hover:bg-slate-700/30 rounded-lg transition-colors group">
+                           <div key={kb.id} className="flex items-center justify-between p-3 hover:bg-slate-800/30 rounded-lg transition-colors group">
                               <span className="font-medium text-slate-300">{kb.label}</span>
                               <div className="flex items-center gap-2">
                                  {rebindId === kb.id ? (

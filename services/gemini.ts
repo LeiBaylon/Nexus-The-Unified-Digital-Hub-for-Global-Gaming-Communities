@@ -21,7 +21,7 @@ export const initializeChat = async () => {
   if (!ai) return;
 
   chatSession = ai.chats.create({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-pro-preview',
     config: {
       systemInstruction: `You are Nexus, an elite AI gaming companion. 
       Persona: Cool, tech-savvy, esports expert.
@@ -91,10 +91,10 @@ export const getAIStrategy = async (prompt: string): Promise<string> => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-pro-preview',
       contents: `Provide a deep strategic analysis for: ${prompt}`,
       config: {
-        thinkingConfig: { thinkingBudget: 2048 }, // Enable thinking for deep reasoning
+        thinkingConfig: { thinkingBudget: 4096 }, // Enable thinking for deep reasoning
       }
     });
     return response.text || "Strategy formulation failed.";

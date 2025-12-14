@@ -108,24 +108,24 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: any) =>
   
   const maxSizes = {
     sm: 'max-w-md',
-    md: 'max-w-2xl',
+    md: 'max-w-xl', // Slightly wider for standard modals
     lg: 'max-w-4xl',
     xl: 'max-w-6xl'
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-nexus-900/80 backdrop-blur-md animate-fade-in" onClick={onClose} />
-      <div className={`relative bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full ${maxSizes[size as keyof typeof maxSizes]} max-h-[90vh] overflow-hidden flex flex-col animate-scale-in transform transition-all`}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+      <div className={`relative bg-[#0f172a] border border-slate-800 rounded-xl shadow-2xl w-full ${maxSizes[size as keyof typeof maxSizes]} max-h-[90vh] overflow-hidden flex flex-col animate-scale-in transform transition-all`}>
         {title && (
-          <div className="flex items-center justify-between p-6 border-b border-slate-700 bg-slate-800/50">
-            <h2 className="text-2xl font-display font-bold text-white tracking-wide">{title}</h2>
-            <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors bg-slate-700/50 p-2 rounded-full hover:bg-red-500/20 hover:text-red-400 hover:rotate-90 transition-all duration-300">
-              <X size={20} />
+          <div className="flex items-center justify-between p-5 border-b border-slate-800">
+            <h2 className="text-xl font-display font-bold text-white tracking-wide">{title}</h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-1.5 rounded-full hover:bg-slate-700 hover:text-red-400 transition-all duration-300">
+              <X size={18} />
             </button>
           </div>
         )}
-        <div className="overflow-y-auto custom-scrollbar flex-1 bg-slate-900/30">
+        <div className="overflow-y-auto custom-scrollbar flex-1">
           {children}
         </div>
         {!title && (
@@ -149,7 +149,7 @@ export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confi
                     </div>
                     <p className="text-slate-300 leading-relaxed pt-1">{message}</p>
                 </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700/50">
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
                     <Button variant="ghost" onClick={onClose}>Cancel</Button>
                     <Button variant={variant} onClick={() => { onConfirm(); onClose(); }}>{confirmText}</Button>
                 </div>
@@ -172,14 +172,14 @@ export const ProgressBar = ({ value, max, color = "bg-nexus-accent", className =
   );
 };
 
-export const Badge = ({ children, color = "bg-slate-700" }: any) => (
-  <span className={`${color} text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide shadow-sm`}>
+export const Badge = ({ children, color = "bg-slate-700", className = "" }: any) => (
+  <span className={`${color} text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide shadow-sm ${className}`}>
     {children}
   </span>
 );
 
 export const Tabs = ({ tabs, activeTab, onChange }: { tabs: string[], activeTab: string, onChange: (t: string) => void }) => (
-  <div className="flex border-b border-slate-700 mb-6">
+  <div className="flex border-b border-slate-800 mb-6">
     {tabs.map(tab => (
       <button
         key={tab}
