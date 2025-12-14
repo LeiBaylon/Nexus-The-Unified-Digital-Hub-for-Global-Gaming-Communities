@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Server, Channel, User, MusicTrack } from '../types';
 import { Avatar, ProgressBar, ConfirmModal } from './UIComponents';
@@ -128,12 +129,12 @@ interface ChannelSidebarProps {
   onOpenProfile: () => void;
   onOpenServerSettings?: () => void;
   users?: User[];
+  onJoinVoice?: (channel: Channel) => void;
 }
 
-export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeChannelId, onSelectChannel, currentUser, onOpenSettings, onOpenProfile, onOpenServerSettings, users = [] }) => {
+export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeChannelId, onSelectChannel, currentUser, onOpenSettings, onOpenProfile, onOpenServerSettings, users = [], onJoinVoice }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
-  const [pendingVoiceChannel, setPendingVoiceChannel] = useState<Channel | null>(null);
 
   const handleToggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -152,14 +153,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
 
   const handleVoiceClick = (channel: Channel) => {
     if (activeChannelId === channel.id) return; // Already in this channel
-    setPendingVoiceChannel(channel);
-  };
-
-  const confirmJoinVoice = () => {
-    if (pendingVoiceChannel) {
-      onSelectChannel(pendingVoiceChannel.id);
-      setPendingVoiceChannel(null);
-    }
+    if (onJoinVoice) onJoinVoice(channel);
   };
 
   return (
@@ -337,16 +331,6 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
            </button>
         </div>
       </div>
-
-      <ConfirmModal 
-        isOpen={!!pendingVoiceChannel} 
-        onClose={() => setPendingVoiceChannel(null)} 
-        onConfirm={confirmJoinVoice}
-        title="Join Voice Channel"
-        message={`Are you sure you want to join ${pendingVoiceChannel?.name}? Your audio will be connected.`}
-        confirmText="Join"
-        variant="primary"
-      />
     </div>
   );
 };

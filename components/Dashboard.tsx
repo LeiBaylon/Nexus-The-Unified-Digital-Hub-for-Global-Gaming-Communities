@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ServerSidebar, ChannelSidebar } from './Sidebars';
 import { ChatInterface } from './ChatInterface';
@@ -7,7 +6,7 @@ import Profile from './Profile';
 import { Modal, Button, Badge, Input, Switch, Keycap, RadioCard, ConfirmModal } from './UIComponents';
 import { MOCK_SERVERS, MOCK_USERS, INITIAL_MESSAGES, LOOT_ITEMS, NOTIFICATION_SOUNDS } from '../constants';
 import { User, Message, SoundEffect, InventoryItem, Server, Role, ServerEmoji, Channel } from '../types';
-import { Gift, Shield, User as UserIcon, Keyboard, Palette, LogOut, Check, Plus, UploadCloud, Monitor, RefreshCw, X, Volume2, Smile, Globe, Ban, Trash2, Lock, Users, Swords, Coffee, Gamepad2 } from 'lucide-react';
+import { Gift, Shield, User as UserIcon, Keyboard, Palette, LogOut, Check, Plus, UploadCloud, Monitor, RefreshCw, X, Volume2, Smile, Globe, Ban, Trash2, Lock, Users, Swords, Coffee, Gamepad2, Mic, Music, Hash, Settings, Tv, AlertTriangle, Link as LinkIcon, Calendar, Zap, ShieldAlert } from 'lucide-react';
 
 interface DashboardProps {
   currentUser: User;
@@ -52,6 +51,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
   const [isServerSettingsOpen, setIsServerSettingsOpen] = useState(false);
   const [serverSettingsTab, setServerSettingsTab] = useState<'OVERVIEW' | 'ROLES' | 'EMOJIS' | 'BANS'>('OVERVIEW');
   const [serverToDelete, setServerToDelete] = useState<string | null>(null);
+  
+  // Pending Voice Channel Join
+  const [pendingVoiceChannel, setPendingVoiceChannel] = useState<Channel | null>(null);
 
   const [viewingProfile, setViewingProfile] = useState<User | null>(null);
   
@@ -65,6 +67,31 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
   const [newServerRegion, setNewServerRegion] = useState('US East');
   const [newServerTemplate, setNewServerTemplate] = useState<'GAMING' | 'SOCIAL' | 'CLAN'>('GAMING');
   const [newServerPrivacy, setNewServerPrivacy] = useState<'PUBLIC' | 'PRIVATE'>('PRIVATE');
+
+  // Template Specific Settings
+  const [gamingConfig, setGamingConfig] = useState({ 
+    game: 'General', 
+    style: 'Casual',
+    platform: 'ALL',
+    skillLevel: 'INTERMEDIATE',
+    autoMod: true
+  });
+  const [socialConfig, setSocialConfig] = useState({ 
+    focus: 'General', 
+    enableMusic: true, 
+    enableMemes: true,
+    ageRestricted: false,
+    enableEvents: false,
+    language: 'English'
+  });
+  const [clanConfig, setClanConfig] = useState({ 
+    tag: '', 
+    recruitmentOpen: true, 
+    minRank: '',
+    website: '',
+    focus: 'PVP',
+    requireVoice: true
+  });
   
   // Loot State
   const [openingLoot, setOpeningLoot] = useState(false);
@@ -220,41 +247,127 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
     }
   };
 
+  const handleJoinVoiceRequest = (channel: Channel) => {
+    setPendingVoiceChannel(channel);
+  };
+
+  const handleConfirmJoinVoice = () => {
+    if (pendingVoiceChannel) {
+        setActiveChannelId(pendingVoiceChannel.id);
+        setPendingVoiceChannel(null);
+    }
+  };
+
   const handleCreateServer = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newServerName.trim()) return;
 
-    let initialChannels: any[] = [];
-    let initialRoles: any[] = [{ id: `r-${Date.now()}-1`, name: 'Owner', color: '#ef4444', isHoisted: true }];
+    let initialChannels: Channel[] = [];
+    let initialRoles: Role[] = [{ id: `r-${Date.now()}-1`, name: 'Owner', color: '#ef4444', isHoisted: true }];
 
-    // Template Logic
+    // Template Logic with Custom Settings
     if (newServerTemplate === 'GAMING') {
-        initialChannels = [
-            { id: `c-${Date.now()}-1`, name: 'general', type: 'TEXT' },
-            { id: `c-${Date.now()}-2`, name: 'clips', type: 'TEXT' },
-            { id: `c-${Date.now()}-3`, name: 'ranked-lfg', type: 'TEXT' },
-            { id: `c-${Date.now()}-4`, name: 'Lobby', type: 'VOICE' },
-            { id: `c-${Date.now()}-5`, name: 'Ranked', type: 'VOICE' },
-        ];
+        // Basic Channels
+        initialChannels.push({ id: `c-${Date.now()}-1`, name: 'general', type: 'TEXT' });
+        
+        // Platform Specific
+        if (gamingConfig.platform === 'PC') {
+            initialChannels.push({ id: `c-${Date.now()}-pc`, name: 'pc-specs', type: 'TEXT' });
+        } else if (gamingConfig.platform === 'CONSOLE') {
+            initialChannels.push({ id: `c-${Date.now()}-con`, name: 'console-war', type: 'TEXT' });
+        } else {
+            initialChannels.push({ id: `c-${Date.now()}-cross`, name: 'crossplay-lfg', type: 'TEXT' });
+        }
+
+        // Game Specific Config
+        if (gamingConfig.game !== 'General') {
+             initialChannels.push({ id: `c-${Date.now()}-sub`, name: `${gamingConfig.game.toLowerCase().replace(/\s/g, '-')}-chat`, type: 'TEXT' });
+        }
+
+        // Style Config
+        if (gamingConfig.style === 'Competitive') {
+            initialChannels.push(
+                { id: `c-${Date.now()}-strat`, name: 'strats-and-lineups', type: 'TEXT' },
+                { id: `c-${Date.now()}-scrim`, name: 'scrim-results', type: 'TEXT' },
+                { id: `c-${Date.now()}-vod`, name: 'vod-review', type: 'VOICE' }
+            );
+            initialRoles.push({ id: `r-${Date.now()}-comp`, name: 'Team Captain', color: '#f59e0b', isHoisted: true });
+        } else {
+             initialChannels.push(
+                { id: `c-${Date.now()}-clips`, name: 'clips', type: 'TEXT' },
+                { id: `c-${Date.now()}-meme`, name: 'memes', type: 'TEXT' }
+             );
+        }
+
+        // Auto Mod
+        if (gamingConfig.autoMod) {
+            initialChannels.push({ id: `c-${Date.now()}-rules`, name: 'rules', type: 'TEXT' });
+        }
+
+        // Standard Voice
+        initialChannels.push(
+            { id: `c-${Date.now()}-vc1`, name: 'Lobby', type: 'VOICE' },
+            { id: `c-${Date.now()}-vc2`, name: 'Ranked', type: 'VOICE' }
+        );
+        
         initialRoles.push({ id: `r-${Date.now()}-2`, name: 'Gamer', color: '#3b82f6' });
+
     } else if (newServerTemplate === 'SOCIAL') {
-        initialChannels = [
-            { id: `c-${Date.now()}-1`, name: 'lounge', type: 'TEXT' },
-            { id: `c-${Date.now()}-2`, name: 'music', type: 'TEXT' },
-            { id: `c-${Date.now()}-3`, name: 'memes', type: 'TEXT' },
-            { id: `c-${Date.now()}-4`, name: 'Voice Chat', type: 'VOICE' },
-        ];
+        initialChannels.push({ id: `c-${Date.now()}-1`, name: 'lounge', type: 'TEXT' });
+        
+        if (socialConfig.focus !== 'General') {
+             initialChannels.push({ id: `c-${Date.now()}-focus`, name: `${socialConfig.focus.toLowerCase().replace(/\s/g, '-')}-talk`, type: 'TEXT' });
+        }
+
+        if (socialConfig.enableMusic) {
+             initialChannels.push(
+                 { id: `c-${Date.now()}-m-cmd`, name: 'music-commands', type: 'TEXT' },
+                 { id: `c-${Date.now()}-m-vc`, name: 'Listening Party', type: 'VOICE' }
+             );
+        }
+        
+        if (socialConfig.enableMemes) {
+             initialChannels.push({ id: `c-${Date.now()}-meme`, name: 'memes-only', type: 'TEXT' });
+        }
+
+        if (socialConfig.ageRestricted) {
+             initialChannels.push({ id: `c-${Date.now()}-nsfw`, name: 'after-dark-nsfw', type: 'TEXT' });
+        }
+
+        if (socialConfig.enableEvents) {
+             initialChannels.push({ id: `c-${Date.now()}-events`, name: 'event-calendar', type: 'TEXT' });
+        }
+
+        initialChannels.push({ id: `c-${Date.now()}-vc-gen`, name: 'Voice Chat', type: 'VOICE' });
         initialRoles.push({ id: `r-${Date.now()}-2`, name: 'Friend', color: '#22c55e' });
+
     } else if (newServerTemplate === 'CLAN') {
-         initialChannels = [
-            { id: `c-${Date.now()}-1`, name: 'announcements', type: 'TEXT' },
-            { id: `c-${Date.now()}-2`, name: 'war-room', type: 'TEXT' },
-            { id: `c-${Date.now()}-3`, name: 'scrims', type: 'TEXT' },
-            { id: `c-${Date.now()}-4`, name: 'Meeting Room', type: 'VOICE' },
-            { id: `c-${Date.now()}-5`, name: 'Battle Station', type: 'VOICE' },
-        ];
-        initialRoles.push({ id: `r-${Date.now()}-2`, name: 'Officer', color: '#f59e0b', isHoisted: true });
-        initialRoles.push({ id: `r-${Date.now()}-3`, name: 'Recruit', color: '#94a3b8' });
+         initialChannels.push({ id: `c-${Date.now()}-1`, name: 'announcements', type: 'TEXT' });
+         
+         if (clanConfig.recruitmentOpen) {
+             initialChannels.push({ id: `c-${Date.now()}-app`, name: 'applications', type: 'TEXT' });
+         }
+
+         if (clanConfig.focus === 'PVE') {
+             initialChannels.push({ id: `c-${Date.now()}-raid`, name: 'raid-guides', type: 'TEXT' });
+         } else if (clanConfig.focus === 'PVP') {
+             initialChannels.push({ id: `c-${Date.now()}-pvp`, name: 'scrim-schedule', type: 'TEXT' });
+         } else {
+             initialChannels.push({ id: `c-${Date.now()}-rp`, name: 'roleplay', type: 'TEXT' });
+         }
+
+         initialChannels.push(
+            { id: `c-${Date.now()}-war`, name: 'war-room', type: 'TEXT' },
+            { id: `c-${Date.now()}-vc1`, name: 'Meeting Room', type: 'VOICE' },
+            { id: `c-${Date.now()}-vc2`, name: 'Battle Station', type: 'VOICE' }
+         );
+
+         initialRoles.push({ id: `r-${Date.now()}-2`, name: 'Officer', color: '#f59e0b', isHoisted: true });
+         initialRoles.push({ id: `r-${Date.now()}-3`, name: 'Member', color: '#94a3b8' });
+         
+         if (clanConfig.tag) {
+             initialRoles.push({ id: `r-${Date.now()}-tag`, name: `[${clanConfig.tag}]`, color: '#ffffff' });
+         }
     }
 
     const newServer: Server = {
@@ -268,8 +381,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
 
     setServers([...servers, newServer]);
     setNewServerName('');
-    setNewServerRegion('US East');
-    setNewServerTemplate('GAMING');
+    
+    // Reset specific states
+    setGamingConfig({ game: 'General', style: 'Casual', platform: 'ALL', skillLevel: 'INTERMEDIATE', autoMod: true });
+    setSocialConfig({ focus: 'General', enableMusic: true, enableMemes: true, ageRestricted: false, enableEvents: false, language: 'English' });
+    setClanConfig({ tag: '', recruitmentOpen: true, minRank: '', website: '', focus: 'PVP', requireVoice: true });
+    
     setIsCreateServerOpen(false);
     handleSelectServer(newServer.id);
   };
@@ -353,6 +470,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
                onOpenProfile={() => setViewingProfile(currentUser)}
                onOpenServerSettings={() => { setServerSettingsTab('OVERVIEW'); setIsServerSettingsOpen(true); }}
                users={MOCK_USERS}
+               onJoinVoice={handleJoinVoiceRequest}
             />
 
             <ChatInterface 
@@ -438,483 +556,290 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser: initialUser, onLogou
       </Modal>
 
       {/* Create Server Modal - UPGRADED */}
-      <Modal isOpen={isCreateServerOpen} onClose={() => setIsCreateServerOpen(false)} title="Create Your Server" size="md">
-        <form onSubmit={handleCreateServer} className="p-6 space-y-6">
-          <div className="text-center mb-6">
-             <div className="w-24 h-24 bg-slate-800 rounded-full mx-auto flex items-center justify-center border-2 border-dashed border-slate-600 hover:border-nexus-accent cursor-pointer group transition-colors relative overflow-hidden">
-                <UploadCloud size={32} className="text-slate-500 group-hover:text-nexus-accent" />
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white">
-                   UPLOAD
-                </div>
-             </div>
-             <p className="text-slate-400 text-xs mt-3">Icons help users identify your server.</p>
-          </div>
-          
-          <Input 
-            label="Server Name" 
-            placeholder="My Awesome Guild" 
-            value={newServerName}
-            onChange={(e: any) => setNewServerName(e.target.value)}
-            autoFocus
-          />
-
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Server Template</label>
-            <div className="grid grid-cols-3 gap-3">
-               <div 
-                  onClick={() => setNewServerTemplate('GAMING')}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-2 text-center ${newServerTemplate === 'GAMING' ? 'bg-nexus-accent/20 border-nexus-accent text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
-               >
-                  <Gamepad2 size={24} className={newServerTemplate === 'GAMING' ? 'text-nexus-accent' : 'text-slate-500'} />
-                  <span className="text-xs font-bold">Gaming</span>
+      <Modal isOpen={isCreateServerOpen} onClose={() => setIsCreateServerOpen(false)} title="Create Your Server" size="lg">
+        <form onSubmit={handleCreateServer} className="flex flex-col h-[500px]">
+           <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+               <div className="text-center mb-6">
+                  <div className="w-24 h-24 bg-slate-800 rounded-full mx-auto flex items-center justify-center border-2 border-dashed border-slate-600 hover:border-nexus-accent cursor-pointer group transition-colors relative overflow-hidden">
+                     <UploadCloud size={32} className="text-slate-500 group-hover:text-nexus-accent" />
+                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white">
+                        UPLOAD
+                     </div>
+                  </div>
+                  <p className="text-slate-400 text-xs mt-3">Icons help users identify your server.</p>
                </div>
-               <div 
-                  onClick={() => setNewServerTemplate('SOCIAL')}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-2 text-center ${newServerTemplate === 'SOCIAL' ? 'bg-nexus-accent/20 border-nexus-accent text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
-               >
-                  <Coffee size={24} className={newServerTemplate === 'SOCIAL' ? 'text-nexus-accent' : 'text-slate-500'} />
-                  <span className="text-xs font-bold">Social</span>
-               </div>
-               <div 
-                  onClick={() => setNewServerTemplate('CLAN')}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-2 text-center ${newServerTemplate === 'CLAN' ? 'bg-nexus-accent/20 border-nexus-accent text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
-               >
-                  <Swords size={24} className={newServerTemplate === 'CLAN' ? 'text-nexus-accent' : 'text-slate-500'} />
-                  <span className="text-xs font-bold">Clan</span>
-               </div>
-            </div>
-          </div>
+               
+               <Input 
+                  label="Server Name" 
+                  placeholder="My Awesome Guild" 
+                  value={newServerName}
+                  onChange={(e: any) => setNewServerName(e.target.value)}
+                  autoFocus
+               />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Server Region</label>
-               <div className="relative">
-                  <select 
-                     className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-nexus-accent appearance-none cursor-pointer text-sm"
-                     value={newServerRegion}
-                     onChange={(e) => setNewServerRegion(e.target.value)}
-                  >
-                     <option value="US East">🇺🇸 US East</option>
-                     <option value="US West">🇺🇸 US West</option>
-                     <option value="EU West">🇪🇺 EU West</option>
-                     <option value="Asia">🇯🇵 Asia</option>
-                  </select>
-                  <Globe className="absolute right-3 top-2.5 text-slate-500 pointer-events-none" size={16} />
+               <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Server Template</label>
+                  <div className="grid grid-cols-3 gap-3">
+                     <div 
+                        onClick={() => setNewServerTemplate('GAMING')}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-2 text-center ${newServerTemplate === 'GAMING' ? 'bg-nexus-accent/20 border-nexus-accent text-white ring-1 ring-nexus-accent' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
+                     >
+                        <Gamepad2 size={24} className={newServerTemplate === 'GAMING' ? 'text-nexus-accent' : 'text-slate-500'} />
+                        <span className="text-xs font-bold">Gaming</span>
+                     </div>
+                     <div 
+                        onClick={() => setNewServerTemplate('SOCIAL')}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-2 text-center ${newServerTemplate === 'SOCIAL' ? 'bg-nexus-accent/20 border-nexus-accent text-white ring-1 ring-nexus-accent' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
+                     >
+                        <Coffee size={24} className={newServerTemplate === 'SOCIAL' ? 'text-nexus-accent' : 'text-slate-500'} />
+                        <span className="text-xs font-bold">Social</span>
+                     </div>
+                     <div 
+                        onClick={() => setNewServerTemplate('CLAN')}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-2 text-center ${newServerTemplate === 'CLAN' ? 'bg-nexus-accent/20 border-nexus-accent text-white ring-1 ring-nexus-accent' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
+                     >
+                        <Swords size={24} className={newServerTemplate === 'CLAN' ? 'text-nexus-accent' : 'text-slate-500'} />
+                        <span className="text-xs font-bold">Clan</span>
+                     </div>
+                  </div>
                </div>
-            </div>
+               
+               {/* DYNAMIC SETTINGS PANEL */}
+               <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 animate-fade-in">
+                  <div className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                     <Settings size={12} /> {newServerTemplate} Configuration
+                  </div>
+                  
+                  {newServerTemplate === 'GAMING' && (
+                     <div className="space-y-4">
+                        <div>
+                           <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Primary Game</label>
+                           <select 
+                              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-nexus-accent"
+                              value={gamingConfig.game}
+                              onChange={(e) => setGamingConfig({...gamingConfig, game: e.target.value})}
+                           >
+                              <option value="General">General / Variety</option>
+                              <option value="Valorant">Valorant</option>
+                              <option value="League of Legends">League of Legends</option>
+                              <option value="Counter-Strike 2">Counter-Strike 2</option>
+                              <option value="Minecraft">Minecraft</option>
+                           </select>
+                        </div>
+                        <div>
+                           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Play Style</label>
+                           <div className="grid grid-cols-2 gap-3">
+                              <RadioCard 
+                                 title="Casual" 
+                                 selected={gamingConfig.style === 'Casual'} 
+                                 onClick={() => setGamingConfig({...gamingConfig, style: 'Casual'})} 
+                                 color="bg-green-500" 
+                              />
+                              <RadioCard 
+                                 title="Competitive" 
+                                 selected={gamingConfig.style === 'Competitive'} 
+                                 onClick={() => setGamingConfig({...gamingConfig, style: 'Competitive'})} 
+                                 color="bg-red-500" 
+                              />
+                           </div>
+                        </div>
+                        <div>
+                           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Platform Preference</label>
+                           <div className="grid grid-cols-3 gap-3">
+                              <div 
+                                onClick={() => setGamingConfig({...gamingConfig, platform: 'PC'})}
+                                className={`p-3 rounded-lg border cursor-pointer text-center text-sm font-bold flex flex-col items-center gap-1 ${gamingConfig.platform === 'PC' ? 'bg-nexus-accent/20 border-nexus-accent text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                              >
+                                <Monitor size={16} /> PC
+                              </div>
+                              <div 
+                                onClick={() => setGamingConfig({...gamingConfig, platform: 'CONSOLE'})}
+                                className={`p-3 rounded-lg border cursor-pointer text-center text-sm font-bold flex flex-col items-center gap-1 ${gamingConfig.platform === 'CONSOLE' ? 'bg-nexus-accent/20 border-nexus-accent text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                              >
+                                <Tv size={16} /> Console
+                              </div>
+                              <div 
+                                onClick={() => setGamingConfig({...gamingConfig, platform: 'ALL'})}
+                                className={`p-3 rounded-lg border cursor-pointer text-center text-sm font-bold flex flex-col items-center gap-1 ${gamingConfig.platform === 'ALL' ? 'bg-nexus-accent/20 border-nexus-accent text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                              >
+                                <Users size={16} /> Crossplay
+                              </div>
+                           </div>
+                        </div>
+                        <Switch 
+                           label="Enable Auto-Moderation" 
+                           checked={gamingConfig.autoMod} 
+                           onChange={(v: boolean) => setGamingConfig({...gamingConfig, autoMod: v})} 
+                        />
+                     </div>
+                  )}
 
-             <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Privacy</label>
-                <div className="relative">
-                    <select 
-                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-nexus-accent appearance-none cursor-pointer text-sm"
-                        value={newServerPrivacy}
-                        onChange={(e) => setNewServerPrivacy(e.target.value as any)}
-                    >
-                        <option value="PRIVATE">Private (Invite Only)</option>
-                        <option value="PUBLIC">Public (Discoverable)</option>
-                    </select>
-                    <Lock className="absolute right-3 top-2.5 text-slate-500 pointer-events-none" size={16} />
-                </div>
-             </div>
-          </div>
+                  {newServerTemplate === 'SOCIAL' && (
+                     <div className="space-y-4">
+                         <div className="grid grid-cols-2 gap-4">
+                            <div>
+                               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Community Focus</label>
+                               <select 
+                                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-nexus-accent"
+                                  value={socialConfig.focus}
+                                  onChange={(e) => setSocialConfig({...socialConfig, focus: e.target.value})}
+                               >
+                                  <option value="General">General Hangout</option>
+                                  <option value="Anime">Anime & Manga</option>
+                                  <option value="Tech">Tech & Coding</option>
+                                  <option value="Music">Music Production</option>
+                               </select>
+                            </div>
+                            <div>
+                               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Primary Language</label>
+                               <select 
+                                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-nexus-accent"
+                                  value={socialConfig.language}
+                                  onChange={(e) => setSocialConfig({...socialConfig, language: e.target.value})}
+                               >
+                                  <option value="English">English</option>
+                                  <option value="Spanish">Spanish</option>
+                                  <option value="French">French</option>
+                                  <option value="German">German</option>
+                                  <option value="Japanese">Japanese</option>
+                               </select>
+                            </div>
+                         </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 pt-2">
+                           <Switch 
+                              label="Music Channels" 
+                              checked={socialConfig.enableMusic} 
+                              onChange={(v: boolean) => setSocialConfig({...socialConfig, enableMusic: v})} 
+                           />
+                           <Switch 
+                              label="Meme Channels" 
+                              checked={socialConfig.enableMemes} 
+                              onChange={(v: boolean) => setSocialConfig({...socialConfig, enableMemes: v})} 
+                           />
+                           <Switch 
+                              label="Event Calendar" 
+                              checked={socialConfig.enableEvents} 
+                              onChange={(v: boolean) => setSocialConfig({...socialConfig, enableEvents: v})} 
+                           />
+                           <Switch 
+                              label="NSFW / 18+ Content" 
+                              checked={socialConfig.ageRestricted} 
+                              onChange={(v: boolean) => setSocialConfig({...socialConfig, ageRestricted: v})} 
+                           />
+                        </div>
+                     </div>
+                  )}
 
-          <div className="flex justify-end gap-3 pt-4">
+                  {newServerTemplate === 'CLAN' && (
+                     <div className="space-y-4">
+                        <div className="grid grid-cols-3 gap-4">
+                           <div className="col-span-1">
+                              <Input 
+                                 label="Clan Tag" 
+                                 placeholder="NEX" 
+                                 maxLength={4}
+                                 value={clanConfig.tag}
+                                 onChange={(e: any) => setClanConfig({...clanConfig, tag: e.target.value.toUpperCase()})}
+                              />
+                           </div>
+                           <div className="col-span-2">
+                              <Input 
+                                 label="Min Rank (Optional)" 
+                                 placeholder="e.g. Diamond+" 
+                                 value={clanConfig.minRank}
+                                 onChange={(e: any) => setClanConfig({...clanConfig, minRank: e.target.value})}
+                              />
+                           </div>
+                        </div>
+                        
+                        <Input 
+                           label="Clan Website" 
+                           placeholder="https://myclan.gg"
+                           value={clanConfig.website}
+                           onChange={(e: any) => setClanConfig({...clanConfig, website: e.target.value})}
+                        />
+
+                        <div>
+                           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Clan Focus</label>
+                           <div className="grid grid-cols-3 gap-3">
+                              <RadioCard 
+                                 title="PvP" 
+                                 selected={clanConfig.focus === 'PVP'} 
+                                 onClick={() => setClanConfig({...clanConfig, focus: 'PVP'})} 
+                                 color="bg-red-500" 
+                              />
+                              <RadioCard 
+                                 title="PvE" 
+                                 selected={clanConfig.focus === 'PVE'} 
+                                 onClick={() => setClanConfig({...clanConfig, focus: 'PVE'})} 
+                                 color="bg-blue-500" 
+                              />
+                              <RadioCard 
+                                 title="Hybrid" 
+                                 selected={clanConfig.focus === 'HYBRID'} 
+                                 onClick={() => setClanConfig({...clanConfig, focus: 'HYBRID'})} 
+                                 color="bg-purple-500" 
+                              />
+                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                           <Switch 
+                              label="Recruitment Open" 
+                              checked={clanConfig.recruitmentOpen} 
+                              onChange={(v: boolean) => setClanConfig({...clanConfig, recruitmentOpen: v})} 
+                           />
+                           <Switch 
+                              label="Require Mic" 
+                              checked={clanConfig.requireVoice} 
+                              onChange={(v: boolean) => setClanConfig({...clanConfig, requireVoice: v})} 
+                           />
+                        </div>
+                     </div>
+                  )}
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                  <div>
+                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Server Region</label>
+                     <div className="relative">
+                        <select 
+                           className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-nexus-accent appearance-none cursor-pointer text-sm"
+                           value={newServerRegion}
+                           onChange={(e) => setNewServerRegion(e.target.value)}
+                        >
+                           <option value="US East">🇺🇸 US East</option>
+                           <option value="US West">🇺🇸 US West</option>
+                           <option value="EU West">🇪🇺 EU West</option>
+                           <option value="Asia">🇯🇵 Asia</option>
+                        </select>
+                        <Globe className="absolute right-3 top-2.5 text-slate-500 pointer-events-none" size={16} />
+                     </div>
+                  </div>
+
+                  <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Privacy</label>
+                      <div className="relative">
+                          <select 
+                              className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-nexus-accent appearance-none cursor-pointer text-sm"
+                              value={newServerPrivacy}
+                              onChange={(e) => setNewServerPrivacy(e.target.value as any)}
+                          >
+                              <option value="PRIVATE">Private (Invite Only)</option>
+                              <option value="PUBLIC">Public (Discoverable)</option>
+                          </select>
+                          <Lock className="absolute right-3 top-2.5 text-slate-500 pointer-events-none" size={16} />
+                      </div>
+                  </div>
+               </div>
+           </div>
+
+          <div className="flex justify-end gap-3 p-6 border-t border-slate-800 bg-slate-900">
              <Button type="button" variant="ghost" onClick={() => setIsCreateServerOpen(false)}>Cancel</Button>
              <Button type="submit" variant="primary" disabled={!newServerName.trim()}>Create Server</Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Server Settings Modal - UPGRADED */}
-      <Modal isOpen={isServerSettingsOpen} onClose={() => setIsServerSettingsOpen(false)} title="Server Settings" size="lg">
-        <div className="flex h-[500px]">
-           {/* Sidebar */}
-           <div className="w-48 border-r border-slate-800 py-2 pr-2 flex flex-col gap-1">
-              {['OVERVIEW', 'ROLES', 'EMOJIS', 'BANS'].map(tab => (
-                 <button
-                    key={tab}
-                    onClick={() => setServerSettingsTab(tab as any)}
-                    className={`text-left px-4 py-2 rounded font-bold text-sm transition-colors ${serverSettingsTab === tab ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}`}
-                 >
-                    {tab.charAt(0) + tab.slice(1).toLowerCase()}
-                 </button>
-              ))}
-           </div>
-
-           {/* Content */}
-           <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
-              {activeServer ? (
-                 <>
-                    {serverSettingsTab === 'OVERVIEW' && (
-                       <div className="space-y-6 animate-fade-in">
-                          <div className="flex gap-6 items-start">
-                              <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-slate-800 relative group cursor-pointer flex-shrink-0">
-                                 <img src={activeServer.icon} className="w-full h-full object-cover" />
-                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white">CHANGE</div>
-                              </div>
-                              <div className="flex-1 space-y-4">
-                                 <Input 
-                                    label="Server Name" 
-                                    defaultValue={activeServer.name} 
-                                    onChange={(e: any) => handleUpdateServer({ name: e.target.value })}
-                                 />
-                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Server Region</label>
-                                    <div className="relative">
-                                       <select 
-                                          className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-nexus-accent appearance-none cursor-pointer"
-                                          defaultValue={activeServer.region || 'US East'}
-                                          onChange={(e) => handleUpdateServer({ region: e.target.value })}
-                                       >
-                                          <option value="US East">🇺🇸 US East</option>
-                                          <option value="US West">🇺🇸 US West</option>
-                                          <option value="EU West">🇪🇺 EU West</option>
-                                          <option value="Asia">🇯🇵 Asia</option>
-                                       </select>
-                                       <Globe className="absolute right-3 top-3 text-slate-500 pointer-events-none" size={16} />
-                                    </div>
-                                 </div>
-                              </div>
-                          </div>
-                          
-                          <div className="pt-8 border-t border-slate-800 mt-8">
-                             <h4 className="text-xs font-bold text-red-400 uppercase mb-4">Danger Zone</h4>
-                             <div className="border border-red-500/20 rounded-lg p-4 flex items-center justify-between">
-                                <div>
-                                   <div className="font-bold text-white">Delete Server</div>
-                                   <div className="text-xs text-slate-400">Permanently remove this server and all contents.</div>
-                                </div>
-                                <Button variant="danger" onClick={() => { setIsServerSettingsOpen(false); setServerToDelete(activeServer.id); }}>Delete Server</Button>
-                             </div>
-                          </div>
-                       </div>
-                    )}
-
-                    {serverSettingsTab === 'ROLES' && (
-                       <div className="space-y-4 animate-fade-in">
-                          <div className="flex justify-between items-center mb-4">
-                             <h3 className="font-bold text-white">Roles ({activeServer.roles?.length || 0})</h3>
-                             <Button variant="secondary" className="text-xs h-8" onClick={handleAddRole}><Plus size={14} /> Create Role</Button>
-                          </div>
-                          <div className="space-y-2">
-                             {activeServer.roles?.map(role => (
-                                <div key={role.id} className="flex items-center justify-between bg-slate-800 p-3 rounded-lg border border-slate-700 hover:border-nexus-accent transition-colors group">
-                                   <div className="flex items-center gap-3">
-                                      <div className="w-4 h-4 rounded-full border border-white/10" style={{ backgroundColor: role.color }}></div>
-                                      <span className="font-medium text-slate-200">{role.name}</span>
-                                   </div>
-                                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <button className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Edit Role"><Palette size={14} /></button>
-                                      <button 
-                                         className="p-2 hover:bg-red-500/20 rounded text-slate-400 hover:text-red-400" 
-                                         title="Delete Role"
-                                         onClick={() => handleDeleteRole(role.id)}
-                                      >
-                                         <Trash2 size={14} />
-                                      </button>
-                                   </div>
-                                </div>
-                             ))}
-                             {(!activeServer.roles || activeServer.roles.length === 0) && (
-                                <div className="text-center text-slate-500 py-8">No roles created.</div>
-                             )}
-                          </div>
-                       </div>
-                    )}
-
-                    {serverSettingsTab === 'EMOJIS' && (
-                       <div className="space-y-6 animate-fade-in">
-                          <div className="flex justify-between items-center">
-                             <div>
-                                <h3 className="font-bold text-white">Server Emojis</h3>
-                                <p className="text-xs text-slate-400">Upload custom emojis for your community.</p>
-                             </div>
-                             <Button variant="primary" className="text-xs h-8"><UploadCloud size={14} /> Upload Emoji</Button>
-                          </div>
-                          <div className="grid grid-cols-4 gap-4">
-                             {activeServer.emojis?.map(emoji => (
-                                <div key={emoji.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col items-center gap-2 hover:bg-slate-750 transition-colors group relative">
-                                   <img src={emoji.url} className="w-8 h-8 object-contain" />
-                                   <span className="text-xs font-mono text-slate-400">:{emoji.name}:</span>
-                                   <button className="absolute top-1 right-1 p-1 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <X size={12} />
-                                   </button>
-                                </div>
-                             ))}
-                             {/* Placeholder slots */}
-                             {[1,2,3,4].map(i => (
-                                <div key={i} className="bg-slate-800/30 border border-slate-700 border-dashed rounded-xl p-4 flex items-center justify-center opacity-50">
-                                   <Smile className="text-slate-600" />
-                                </div>
-                             ))}
-                          </div>
-                       </div>
-                    )}
-
-                    {serverSettingsTab === 'BANS' && (
-                       <div className="space-y-4 animate-fade-in">
-                          <h3 className="font-bold text-white mb-4">Banned Users</h3>
-                          {bannedUsers.length > 0 ? (
-                             bannedUsers.map(ban => (
-                                <div key={ban.id} className="flex items-center justify-between p-3 bg-slate-800 border border-slate-700 rounded-lg">
-                                   <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-slate-400">
-                                         <Ban size={20} />
-                                      </div>
-                                      <div>
-                                         <div className="font-bold text-white">{ban.username}</div>
-                                         <div className="text-xs text-red-400">Reason: {ban.reason}</div>
-                                      </div>
-                                   </div>
-                                   <Button variant="secondary" className="text-xs h-8" onClick={() => handleUnban(ban.id)}>Revoke Ban</Button>
-                                </div>
-                             ))
-                          ) : (
-                             <div className="text-center py-10 text-slate-500">
-                                <Shield size={48} className="mx-auto mb-4 opacity-20" />
-                                <p>No banned users. Good vibes only!</p>
-                             </div>
-                          )}
-                       </div>
-                    )}
-                 </>
-              ) : (
-                 <p className="text-slate-400">No server selected.</p>
-              )}
-           </div>
-        </div>
-        
-        {/* Footer actions for Modal (Common) */}
-        {serverSettingsTab === 'OVERVIEW' && (
-           <div className="flex justify-end gap-3 pt-4 border-t border-slate-800 mt-0 px-6 pb-6 bg-slate-900 rounded-b-xl">
-              <Button variant="ghost" onClick={() => setIsServerSettingsOpen(false)}>Cancel</Button>
-              <Button variant="primary" onClick={() => setIsServerSettingsOpen(false)}>Save Changes</Button>
-           </div>
-        )}
-      </Modal>
-      
-      {/* Delete Server Confirm Modal */}
-      <ConfirmModal 
-        isOpen={!!serverToDelete} 
-        onClose={() => setServerToDelete(null)}
-        onConfirm={handleDeleteServer}
-        title="Delete Server"
-        message={`Are you sure you want to delete this server? This action cannot be undone and all channels will be lost.`}
-      />
-
-      {/* Profile Modal */}
-      <Modal isOpen={!!viewingProfile} onClose={() => setViewingProfile(null)} size="lg">
-         {viewingProfile && (
-            <Profile 
-               user={viewingProfile} 
-               isCurrentUser={viewingProfile.id === currentUser.id} 
-               onUpdate={(u) => {
-                  setCurrentUser(u);
-                  const idx = MOCK_USERS.findIndex(mu => mu.id === u.id);
-                  if (idx !== -1) MOCK_USERS[idx] = u;
-               }}
-               onMessageUser={handleMessageUser}
-               onClose={() => setViewingProfile(null)}
-            />
-         )}
-      </Modal>
-
-      {/* Settings Modal */}
-      <Modal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} title="Nexus Settings" size="lg">
-         <div className="flex gap-6 h-[500px]">
-            {/* Settings Sidebar */}
-            <div className="w-48 flex flex-col gap-2 border-r border-slate-800 pr-4 py-2">
-               <button 
-                  onClick={() => setSettingsTab('PROFILE')} 
-                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'PROFILE' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
-               >
-                  <UserIcon size={16} /> My Profile
-               </button>
-               <button 
-                  onClick={() => setSettingsTab('APPEARANCE')} 
-                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'APPEARANCE' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
-               >
-                  <Palette size={16} /> Appearance
-               </button>
-               <button 
-                  onClick={() => setSettingsTab('AUDIO')} 
-                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'AUDIO' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
-               >
-                  <Volume2 size={16} /> Audio & Notifications
-               </button>
-               <button 
-                  onClick={() => setSettingsTab('KEYBINDS')} 
-                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${settingsTab === 'KEYBINDS' ? 'bg-nexus-accent text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
-               >
-                  <Keyboard size={16} /> Keybinds
-               </button>
-               <div className="flex-1"></div>
-               <button onClick={onLogout} className="flex items-center gap-2 px-3 py-2 text-red-500 hover:bg-red-500/10 rounded border border-red-500/20"><LogOut size={16} /> Log Out</button>
-            </div>
-            
-            {/* Settings Content */}
-            <div className="flex-1 space-y-6 overflow-y-auto pr-2 py-2 custom-scrollbar">
-               {settingsTab === 'PROFILE' && (
-                  <div className="space-y-4">
-                     <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-800 pb-2">Profile Settings</h3>
-                     <p className="text-slate-400 text-sm">To edit your public profile, banner, or bio, please visit your Profile page directly.</p>
-                     <Button onClick={() => { setIsSettingsOpen(false); openProfile(currentUser.id); }}>Go to My Profile</Button>
-                     
-                     <h3 className="text-lg font-bold text-white mt-8 mb-4 border-b border-slate-800 pb-2">Account Status</h3>
-                     <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
-                        <div className="flex items-center gap-3">
-                           <div className="w-12 h-12 bg-nexus-accent/20 rounded-full flex items-center justify-center text-nexus-accent">
-                              <Shield size={24} />
-                           </div>
-                           <div>
-                              <div className="font-bold text-white">Nexus Verified</div>
-                              <div className="text-xs text-slate-500">Your email is verified and secure.</div>
-                           </div>
-                           <Check className="ml-auto text-green-500" />
-                        </div>
-                     </div>
-                  </div>
-               )}
-
-               {settingsTab === 'APPEARANCE' && (
-                  <div className="space-y-8 animate-fade-in">
-                     <div>
-                        <h3 className="text-lg font-bold text-white mb-4">Theme</h3>
-                        <div className="grid grid-cols-3 gap-4">
-                           <RadioCard 
-                              title="Cyberpunk" 
-                              selected={preferences.theme === 'cyberpunk'} 
-                              onClick={() => setPreferences(p => ({...p, theme: 'cyberpunk'}))} 
-                              color="bg-nexus-900"
-                           />
-                           <RadioCard 
-                              title="Midnight" 
-                              selected={preferences.theme === 'midnight'} 
-                              onClick={() => setPreferences(p => ({...p, theme: 'midnight'}))} 
-                              color="bg-black"
-                           />
-                           <RadioCard 
-                              title="Daylight" 
-                              selected={preferences.theme === 'light'} 
-                              onClick={() => setPreferences(p => ({...p, theme: 'light'}))} 
-                              color="bg-slate-200"
-                           />
-                        </div>
-                     </div>
-
-                     <div>
-                        <h3 className="text-lg font-bold text-white mb-4">Display</h3>
-                        <div className="space-y-2">
-                           <Switch 
-                              label="Compact Mode" 
-                              checked={preferences.density === 'compact'} 
-                              onChange={(v: boolean) => setPreferences(p => ({...p, density: v ? 'compact' : 'comfortable'}))} 
-                           />
-                           <Switch 
-                              label="Reduced Motion" 
-                              checked={preferences.reducedMotion} 
-                              onChange={(v: boolean) => setPreferences(p => ({...p, reducedMotion: v}))} 
-                           />
-                           <Switch 
-                              label="Streamer Mode (Hide Personal Info)" 
-                              checked={preferences.streamerMode} 
-                              onChange={(v: boolean) => setPreferences(p => ({...p, streamerMode: v}))} 
-                           />
-                        </div>
-                     </div>
-                     
-                     <div>
-                        <h3 className="text-lg font-bold text-white mb-4">Developer</h3>
-                        <Switch 
-                           label="Enable Developer Options" 
-                           checked={preferences.devMode} 
-                           onChange={(v: boolean) => setPreferences(p => ({...p, devMode: v}))} 
-                        />
-                     </div>
-                  </div>
-               )}
-
-               {settingsTab === 'AUDIO' && (
-                  <div className="space-y-6 animate-fade-in">
-                     <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-800 pb-2">Sound Settings</h3>
-                     
-                     <div className="space-y-4">
-                        <Switch 
-                           label="Message Sounds" 
-                           checked={preferences.enableSounds} 
-                           onChange={(v: boolean) => setPreferences(p => ({...p, enableSounds: v}))} 
-                        />
-                        <Switch 
-                           label="Mention Sounds (@username)" 
-                           checked={preferences.enableMentionSounds} 
-                           onChange={(v: boolean) => setPreferences(p => ({...p, enableMentionSounds: v}))} 
-                        />
-                        
-                        <div className="pt-4">
-                           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Notification Volume</label>
-                           <input 
-                              type="range" 
-                              min="0" 
-                              max="1" 
-                              step="0.1" 
-                              value={preferences.notificationVolume}
-                              onChange={(e) => setPreferences(p => ({...p, notificationVolume: parseFloat(e.target.value)}))}
-                              className="w-full accent-nexus-accent h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                           />
-                           <div className="flex justify-between text-xs text-slate-400 mt-1">
-                              <span>Silent</span>
-                              <span>{(preferences.notificationVolume * 100).toFixed(0)}%</span>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               )}
-
-               {settingsTab === 'KEYBINDS' && (
-                  <div className="space-y-6 animate-fade-in">
-                     <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                        <h3 className="text-xl font-bold text-white">Keyboard Shortcuts</h3>
-                        <Button variant="ghost" className="text-xs py-1">Reset Defaults</Button>
-                     </div>
-
-                     <div className="space-y-1">
-                        {keybinds.map((kb) => (
-                           <div key={kb.id} className="flex items-center justify-between p-3 hover:bg-slate-800/30 rounded-lg transition-colors group">
-                              <span className="font-medium text-slate-300">{kb.label}</span>
-                              <div className="flex items-center gap-2">
-                                 {rebindId === kb.id ? (
-                                    <span className="text-nexus-glow font-mono font-bold animate-pulse text-sm border-2 border-nexus-glow px-3 py-1 rounded">Press Any Key...</span>
-                                 ) : (
-                                    <div className="flex gap-1" onClick={() => handleRebind(kb.id)}>
-                                       {kb.keys.map((k, i) => (
-                                          <Keycap key={i} onClick={() => handleRebind(kb.id)}>{k}</Keycap>
-                                       ))}
-                                    </div>
-                                 )}
-                                 <button 
-                                    onClick={() => handleRebind(kb.id)}
-                                    className="p-1.5 text-slate-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Edit Keybind"
-                                 >
-                                    <RefreshCw size={14} />
-                                 </button>
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                     
-                     <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-lg flex gap-3 items-start mt-6">
-                        <Keyboard className="text-yellow-500 flex-shrink-0" />
-                        <div className="text-sm text-yellow-200/80">
-                           <span className="font-bold block text-yellow-500 mb-1">Pro Tip</span>
-                           You can use <Keycap className="inline-block scale-75 mx-1">CTRL</Keycap> + <Keycap className="inline-block scale-75 mx-1">K</Keycap> to open the Quick Switcher anywhere in the app to jump between servers and channels instantly.
-                        </div>
-                     </div>
-                  </div>
-               )}
-            </div>
-         </div>
       </Modal>
     </div>
   );

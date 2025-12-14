@@ -84,6 +84,46 @@ export const generateAIImage = async (prompt: string): Promise<string | null> =>
   }
 };
 
+// Generate Video using Veo
+export const generateAIVideo = async (imageBase64: string, mimeType: string, prompt: string, aspectRatio: '16:9' | '9:16'): Promise<string | null> => {
+  // Always create a new instance for Veo requests to ensure latest API key is used
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return null;
+  const ai = new GoogleGenAI({ apiKey });
+
+  try {
+    let operation = await ai.models.generateVideos({
+      model: 'veo-3.1-fast-generate-preview',
+      prompt: prompt || "Animate this image",
+      image: {
+        imageBytes: imageBase64,
+        mimeType: mimeType,
+      },
+      config: {
+        numberOfVideos: 1,
+        resolution: '720p',
+        aspectRatio: aspectRatio
+      }
+    });
+
+    while (!operation.done) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      operation = await ai.operations.getVideosOperation({operation: operation});
+    }
+
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!downloadLink) return null;
+
+    // The response.body contains the MP4 bytes. Must append API key.
+    const response = await fetch(`${downloadLink}&key=${apiKey}`);
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+  } catch (error) {
+    console.error("Video Gen Error:", error);
+    return null;
+  }
+};
+
 // Strategy Thinking Mode using Thinking Config
 export const getAIStrategy = async (prompt: string): Promise<string> => {
   const ai = getAIClient();

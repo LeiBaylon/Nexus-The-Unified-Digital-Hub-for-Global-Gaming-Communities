@@ -1,8 +1,9 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Message, User, Channel, SoundEffect } from '../types';
-import { Avatar, Button, Badge, EmojiPicker, ContextMenu, Modal, ConfirmModal } from './UIComponents';
-import { Send, Hash, Bell, Users, Search, PlusCircle, Smile, Gift, Command, MoreVertical, Music, Zap, Image as ImageIcon, BarChart2, FileText, Check, Trophy, Filter, X, ChevronDown, Trash2, Pin, CornerUpLeft, ExternalLink, Brain, Globe, Copy, Flag, Share, CheckCircle, AlertTriangle, CheckCheck } from 'lucide-react';
-import { sendMessageToAI, generateAIImage, getAIStrategy, getAINews } from '../services/gemini';
+import { Avatar, Button, Badge, EmojiPicker, ContextMenu, Modal, ConfirmModal, Input, RadioCard } from './UIComponents';
+import { Send, Hash, Bell, Users, Search, PlusCircle, Smile, Gift, Command, MoreVertical, Music, Zap, Image as ImageIcon, BarChart2, FileText, Check, Trophy, Filter, X, ChevronDown, Trash2, Pin, CornerUpLeft, ExternalLink, Brain, Globe, Copy, Flag, Share, CheckCircle, AlertTriangle, CheckCheck, Video, Loader2, UploadCloud } from 'lucide-react';
+import { sendMessageToAI, generateAIImage, getAIStrategy, getAINews, generateAIVideo } from '../services/gemini';
 import { SOUND_EFFECTS } from '../constants';
 
 interface ChatInterfaceProps {
@@ -67,6 +68,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
   
+  // Veo Video Generation State
+  const [showVeoModal, setShowVeoModal] = useState(false);
+  const [veoImage, setVeoImage] = useState<File | null>(null);
+  const [veoPrompt, setVeoPrompt] = useState('');
+  const [veoAspectRatio, setVeoAspectRatio] = useState<'16:9' | '9:16'>('16:9');
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [veoPreview, setVeoPreview] = useState<string | null>(null);
+  const veoInputRef = useRef<HTMLInputElement>(null);
+
   // Message Interaction State
   const [reactionTargetId, setReactionTargetId] = useState<string | null>(null);
   
@@ -135,6 +145,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
      if (filterType !== 'ALL') {
          if (filterType === 'SYSTEM' && !msg.isSystem) return false;
          if (filterType === 'IMAGE' && msg.type !== 'IMAGE') return false;
+         if (filterType === 'VIDEO' && msg.type !== 'VIDEO') return false;
          if (filterType === 'GIFT' && msg.type !== 'GIFT') return false;
          if (filterType === 'POLL' && msg.type !== 'POLL') return false;
          if (filterType === 'TEXT' && (msg.type !== 'TEXT' || msg.isSystem)) return false;
@@ -294,6 +305,57 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
       if (fileInputRef.current) fileInputRef.current.value = '';
       setShowPlusMenu(false);
     }
+  };
+  
+  const handleVeoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          setVeoImage(file);
+          setVeoPreview(URL.createObjectURL(file));
+      }
+  };
+
+  const handleVeoGenerate = async () => {
+     if (!veoImage) return;
+     
+     // Check for API Key Selection (Mandatory for Veo)
+     if ((window as any).aistudio) {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+            await (window as any).aistudio.openSelectKey();
+            // Re-check just in case
+            if (!await (window as any).aistudio.hasSelectedApiKey()) return;
+        }
+     }
+
+     setIsGeneratingVideo(true);
+
+     // Convert file to base64
+     const reader = new FileReader();
+     reader.readAsDataURL(veoImage);
+     reader.onload = async () => {
+         const base64Data = (reader.result as string).split(',')[1];
+         const mimeType = veoImage.type;
+         
+         const videoUrl = await generateAIVideo(base64Data, mimeType, veoPrompt, veoAspectRatio);
+         
+         if (videoUrl) {
+             onSendMessage({
+                 id: Date.now().toString(),
+                 content: veoPrompt ? `Video generated: ${veoPrompt}` : 'Generated video from image',
+                 senderId: currentUser.id,
+                 timestamp: new Date(),
+                 type: 'VIDEO',
+                 videoUrl: videoUrl
+             });
+             setShowVeoModal(false);
+             setVeoImage(null);
+             setVeoPreview(null);
+             setVeoPrompt('');
+         }
+         setIsGeneratingVideo(false);
+     };
+     reader.onerror = () => setIsGeneratingVideo(false);
   };
 
   const handleSendGift = (giftName: string, icon: string) => {
@@ -516,6 +578,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
                      <option value="ALL">All Messages</option>
                      <option value="TEXT">Text Only</option>
                      <option value="IMAGE">Images</option>
+                     <option value="VIDEO">Videos</option>
                      <option value="GIFT">Gifts</option>
                      <option value="POLL">Polls</option>
                      <option value="SYSTEM">System</option>
@@ -723,6 +786,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
                                 <a href={msg.imageUrl} download="nexus_image.png" className="bg-black/50 p-2 rounded text-white hover:bg-nexus-accent"><ImageIcon size={16}/></a>
                               </div>
                             </div>
+                        ) : msg.type === 'VIDEO' && msg.videoUrl ? (
+                            <div className="mt-2 rounded-lg overflow-hidden border border-slate-700 max-w-sm relative bg-black">
+                                <video src={msg.videoUrl} controls className="w-full h-auto" />
+                            </div>
                         ) : msg.type === 'GIFT' && msg.giftData ? (
                             <div className="mt-2 bg-gradient-to-r from-nexus-accent/20 to-nexus-glow/20 border border-nexus-accent/50 rounded-lg p-4 max-w-sm flex items-center gap-4">
                               <div className="text-4xl">{msg.giftData.icon}</div>
@@ -850,6 +917,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
                        onClose={() => setShowPlusMenu(false)} 
                        options={[
                           { label: 'Upload a File', icon: <FileText size={16} />, onClick: () => fileInputRef.current?.click() },
+                          { label: 'Animate Image (Veo)', icon: <Video size={16} />, onClick: () => setShowVeoModal(true) },
                           { label: 'Create Poll', icon: <BarChart2 size={16} />, onClick: handleCreatePoll },
                           { label: 'Generate Image', icon: <ImageIcon size={16} />, onClick: () => { setInputValue('/image '); inputRef.current?.focus(); } },
                           { label: 'Gaming News', icon: <Globe size={16} />, onClick: () => { setInputValue('/news '); inputRef.current?.focus(); } },
@@ -944,6 +1012,63 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
           ))}
         </div>
       </div>
+
+      {/* Veo Modal */}
+      <Modal isOpen={showVeoModal} onClose={() => { setShowVeoModal(false); setVeoImage(null); setVeoPreview(null); }} title="Animate with Veo">
+          <div className="p-6 space-y-6">
+              <div 
+                className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors ${veoPreview ? 'border-nexus-accent bg-slate-800' : 'border-slate-600 hover:border-white hover:bg-slate-800'}`}
+                onClick={() => veoInputRef.current?.click()}
+              >
+                  {veoPreview ? (
+                      <div className="relative group/preview">
+                         <img src={veoPreview} className="max-h-48 rounded shadow-lg" />
+                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity">
+                            <span className="text-white text-xs font-bold">Change Image</span>
+                         </div>
+                      </div>
+                  ) : (
+                      <>
+                         <UploadCloud size={48} className="text-slate-500 mb-2" />
+                         <span className="text-sm font-bold text-slate-300">Click to upload image</span>
+                         <span className="text-xs text-slate-500">JPG or PNG</span>
+                      </>
+                  )}
+                  <input type="file" ref={veoInputRef} className="hidden" accept="image/png, image/jpeg" onChange={handleVeoFileChange} />
+              </div>
+
+              <div>
+                 <Input 
+                   label="Prompt (Optional)" 
+                   placeholder="Describe how the image should move..." 
+                   value={veoPrompt}
+                   onChange={(e: any) => setVeoPrompt(e.target.value)}
+                 />
+              </div>
+
+              <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Aspect Ratio</label>
+                  <div className="grid grid-cols-2 gap-4">
+                     <RadioCard title="Landscape (16:9)" selected={veoAspectRatio === '16:9'} onClick={() => setVeoAspectRatio('16:9')} color="bg-slate-700" />
+                     <RadioCard title="Portrait (9:16)" selected={veoAspectRatio === '9:16'} onClick={() => setVeoAspectRatio('9:16')} color="bg-slate-700" />
+                  </div>
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg flex gap-3 items-start">
+                  <Video className="text-blue-500 flex-shrink-0 mt-0.5" size={16} />
+                  <div className="text-xs text-blue-200">
+                      <strong>Powered by Veo:</strong> Video generation may take a few moments. Requires a paid API key.
+                  </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                 <Button variant="ghost" onClick={() => setShowVeoModal(false)}>Cancel</Button>
+                 <Button variant="primary" onClick={handleVeoGenerate} disabled={!veoImage || isGeneratingVideo}>
+                    {isGeneratingVideo ? <><Loader2 size={16} className="animate-spin" /> Generating...</> : 'Generate Video'}
+                 </Button>
+              </div>
+          </div>
+      </Modal>
 
       {/* Gift Modal */}
       <Modal isOpen={showGiftModal} onClose={() => setShowGiftModal(false)} title="Send a Gift">

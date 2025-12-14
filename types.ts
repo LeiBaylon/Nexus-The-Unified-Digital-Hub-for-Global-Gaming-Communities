@@ -1,4 +1,5 @@
 
+
 export enum UserStatus {
   ONLINE = 'ONLINE',
   IDLE = 'IDLE',
@@ -49,8 +50,9 @@ export interface Message {
   isRead?: boolean;
   replyToId?: string;
   reactions?: { emoji: string; count: number }[];
-  type?: 'TEXT' | 'IMAGE' | 'SYSTEM' | 'GIFT' | 'POLL';
+  type?: 'TEXT' | 'IMAGE' | 'SYSTEM' | 'GIFT' | 'POLL' | 'VIDEO';
   imageUrl?: string;
+  videoUrl?: string;
   giftData?: { title: string; tier: string; icon: string };
   pollData?: { question: string; options: { label: string; votes: number }[] };
   groundingUrls?: { title: string; uri: string }[];
