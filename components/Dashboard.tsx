@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Server, Channel, Message, SoundEffect, Role } from '../types';
 import { MOCK_SERVERS, INITIAL_MESSAGES, MOCK_USERS, MOCK_AUDIT_LOGS, SOUND_EFFECTS } from '../constants';
@@ -12,7 +13,7 @@ import {
   Mic, Volume2, Keyboard, Monitor, Laptop, MousePointer,
   Check, Lock, Unlock, Eye, MessageSquare, AtSign, MousePointer2, Speaker, Move, FileText,
   Filter, ChevronDown, Clock, AlertCircle, Download, Upload,
-  Signal, Video, VideoOff, MicOff, VolumeX, Headphones
+  Signal, Video, VideoOff, MicOff, VolumeX, Headphones, Palette, EyeOff, Hash, Command, Trophy
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -107,18 +108,29 @@ const TEMPLATE_PRESETS: Record<string, any> = {
     }
 };
 
+const THEMES = [
+  { id: 'cyberpunk', name: 'Cyberpunk', color: '#8b5cf6', bg: 'bg-[#0f172a]' },
+  { id: 'midnight', name: 'Midnight', color: '#3b82f6', bg: 'bg-black' },
+  { id: 'emerald', name: 'Emerald', color: '#10b981', bg: 'bg-[#064e3b]' },
+  { id: 'crimson', name: 'Crimson', color: '#ef4444', bg: 'bg-[#450a0a]' },
+];
+
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
   const [servers, setServers] = useState<Server[]>(MOCK_SERVERS);
   const [activeServerId, setActiveServerId] = useState<string>('nexus-home');
   const [activeChannelId, setActiveChannelId] = useState<string>('gen');
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [messageDensity, setMessageDensity] = useState<'comfortable' | 'compact'>('comfortable');
   
   // UI States
   const [showServerSettings, setShowServerSettings] = useState(false);
   const [showCreateServer, setShowCreateServer] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
+  
+  // Settings Tabs State
   const [userSettingsTab, setUserSettingsTab] = useState('MY_ACCOUNT');
+  const [serverSettingsTab, setServerSettingsTab] = useState('OVERVIEW');
 
   // Voice Join State
   const [pendingVoiceChannel, setPendingVoiceChannel] = useState<Channel | null>(null);
@@ -143,20 +155,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
       communityGuidelines: true
   });
 
-  // Server Settings State
-  const [serverSettingsTab, setServerSettingsTab] = useState('OVERVIEW');
   // Roles State
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
-  const [roleTab, setRoleTab] = useState<'DISPLAY' | 'PERMISSIONS' | 'MEMBERS'>('DISPLAY');
-  // Emoji State
-  const [emojiTab, setEmojiTab] = useState<'EMOJI' | 'STICKERS'>('EMOJI');
+  
   // Audit Log State
   const [auditFilterUser, setAuditFilterUser] = useState<string>('');
-  const [auditFilterAction, setAuditFilterAction] = useState<string>('');
   
   // Refs
   const bannerInputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const serverIconInputRef = useRef<HTMLInputElement>(null);
   const createIconInputRef = useRef<HTMLInputElement>(null);
 
   const activeServer = servers.find(s => s.id === activeServerId);
@@ -215,7 +222,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
 
   const confirmVoiceJoin = () => {
       if (!pendingVoiceChannel) return;
-      
       setActiveChannelId(pendingVoiceChannel.id);
       
       // Feedback sound for joining voice
@@ -313,6 +319,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
     }
   };
 
+  const handleThemeChange = (color: string) => {
+    document.documentElement.style.setProperty('--nexus-accent', color);
+  };
+
   // Render Content Logic
   const renderContent = () => {
       if (activeServerId === 'hub') {
@@ -324,9 +334,17 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
           return (
              <div className="flex-1 flex items-center justify-center bg-slate-900 text-slate-500">
                  <div className="text-center">
-                    <div className="text-6xl mb-4">👋</div>
+                    <div className="text-6xl mb-4 animate-float">👋</div>
                     <h2 className="text-2xl font-bold text-white mb-2">Welcome Home, {currentUser.username}</h2>
-                    <p>Select a server or start a conversation.</p>
+                    <p className="mb-6">Select a server or start a conversation.</p>
+                    <div className="flex justify-center gap-4">
+                        <Button variant="secondary" onClick={() => setActiveServerId('hub')}>
+                            <Trophy size={18} className="mr-2" /> Go to Hub
+                        </Button>
+                        <Button variant="primary" onClick={() => setShowUserSettings(true)}>
+                            <Settings size={18} className="mr-2" /> Customize
+                        </Button>
+                    </div>
                  </div>
              </div>
           );
@@ -337,58 +355,477 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
       return (
           <ChatInterface 
               channel={activeChannel}
-              messages={messages} // In a real app, filter by channelId
+              messages={messages} 
               currentUser={currentUser}
               onSendMessage={handleSendMessage}
               onUpdateMessage={handleUpdateMessage}
               onClearMessages={handleClearMessages}
               onDeleteMessage={handleDeleteMessage}
               onAddReaction={handleAddReaction}
-              users={MOCK_USERS} // In a real app, use server.members
+              users={MOCK_USERS} 
               onPlaySound={handlePlaySound}
               onUserClick={() => setShowUserProfile(true)}
-              density="comfortable"
+              density={messageDensity}
           />
       );
   };
 
-  const PERMISSION_GROUPS = [
-    {
-      name: "General Server Permissions",
-      perms: [
-        { id: "VIEW_CHANNELS", label: "View Channels", desc: "Allows members to view channels by default." },
-        { id: "MANAGE_CHANNELS", label: "Manage Channels", desc: "Allows members to create, edit, or delete channels." },
-        { id: "MANAGE_ROLES", label: "Manage Roles", desc: "Allows members to create new roles and edit roles lower than their own." },
-        { id: "MANAGE_EMOJIS", label: "Manage Emojis", desc: "Allows members to upload and delete custom emojis." },
-      ]
-    },
-    {
-      name: "Membership Permissions",
-      perms: [
-        { id: "CREATE_INVITE", label: "Create Invite", desc: "Allows members to invite new people to this server." },
-        { id: "KICK_MEMBERS", label: "Kick Members", desc: "Allows members to remove other members from this server." },
-        { id: "BAN_MEMBERS", label: "Ban Members", desc: "Allows members to permanently ban other members from this server." },
-      ]
-    },
-    {
-      name: "Text Channel Permissions",
-      perms: [
-        { id: "SEND_MESSAGES", label: "Send Messages", desc: "Allows members to send messages in text channels." },
-        { id: "EMBED_LINKS", label: "Embed Links", desc: "Links sent by users with this permission will have a preview." },
-        { id: "ATTACH_FILES", label: "Attach Files", desc: "Allows members to upload files or media." },
-        { id: "ADD_REACTIONS", label: "Add Reactions", desc: "Allows members to add new reactions to a message." },
-      ]
-    },
-    {
-       name: "Voice Channel Permissions",
-       perms: [
-         { id: "CONNECT", label: "Connect", desc: "Allows members to join voice channels." },
-         { id: "SPEAK", label: "Speak", desc: "Allows members to talk in voice channels." },
-         { id: "MUTE_MEMBERS", label: "Mute Members", desc: "Allows members to mute other members in voice channels." },
-         { id: "DEAFEN_MEMBERS", label: "Deafen Members", desc: "Allows members to deafen other members in voice channels." },
-       ]
-    }
-  ];
+  const renderUserSettings = () => {
+    const tabs = [
+        { id: 'MY_ACCOUNT', label: 'My Account', icon: <Users size={18} /> },
+        { id: 'APPEARANCE', label: 'Appearance', icon: <Palette size={18} /> },
+        { id: 'VOICE_VIDEO', label: 'Voice & Video', icon: <Mic size={18} /> },
+        { id: 'KEYBINDS', label: 'Keybinds', icon: <Keyboard size={18} /> },
+        { id: 'STREAMER', label: 'Streamer Mode', icon: <Monitor size={18} /> },
+    ];
+
+    return (
+        <div className="flex h-full">
+            {/* Sidebar */}
+            <div className="w-64 bg-slate-900 border-r border-slate-800 p-4 flex flex-col">
+                <div className="space-y-1 flex-1">
+                    <h3 className="px-3 text-xs font-bold text-slate-500 uppercase mb-2">User Settings</h3>
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setUserSettingsTab(tab.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${userSettingsTab === tab.id ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}`}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
+                    <div className="my-4 border-t border-slate-800" />
+                    <button
+                        onClick={onLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-red-400 hover:bg-red-500/10 hover:text-red-500"
+                    >
+                        <LogOut size={18} />
+                        Log Out
+                    </button>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 bg-slate-800 p-8 overflow-y-auto custom-scrollbar">
+                {userSettingsTab === 'MY_ACCOUNT' && (
+                    <div className="space-y-8 animate-fade-in">
+                        <h2 className="text-2xl font-bold text-white mb-6">My Account</h2>
+                        
+                        {/* Profile Card */}
+                        <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-700">
+                            <div className="h-32 bg-slate-700 relative">
+                                <img src={currentUser.banner || 'https://picsum.photos/800/300'} className="w-full h-full object-cover" />
+                                <div className="absolute top-4 right-4 bg-black/50 px-3 py-1 rounded-full text-xs font-bold text-white backdrop-blur">
+                                    BETA TESTER
+                                </div>
+                            </div>
+                            <div className="px-6 pb-6">
+                                <div className="flex justify-between items-end -mt-10 mb-4">
+                                    <Avatar src={currentUser.avatar} size="xl" className="border-4 border-slate-900" />
+                                    <Button onClick={() => setShowUserProfile(true)} variant="primary" className="mb-2">Edit Profile</Button>
+                                </div>
+                                <div className="text-xl font-bold text-white flex items-center gap-2">
+                                    {currentUser.username}
+                                    <span className="text-nexus-accent text-sm font-normal">#{currentUser.id.padStart(4, '0')}</span>
+                                </div>
+                                <div className="text-slate-400 text-sm mt-1">{currentUser.email || 'email@hidden.com'}</div>
+                            </div>
+                        </div>
+
+                        {/* Password & Security */}
+                        <div>
+                            <h3 className="text-lg font-bold text-white mb-4">Password & Authentication</h3>
+                            <div className="bg-slate-900 rounded-xl border border-slate-700 p-4 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <div className="font-bold text-white text-sm">Change Password</div>
+                                        <div className="text-xs text-slate-500">Last changed 3 months ago</div>
+                                    </div>
+                                    <Button variant="secondary" className="text-xs">Change</Button>
+                                </div>
+                                <div className="border-t border-slate-800 pt-4 flex items-center justify-between">
+                                    <div>
+                                        <div className="font-bold text-white text-sm">Two-Factor Authentication</div>
+                                        <div className="text-xs text-green-500">Enabled</div>
+                                    </div>
+                                    <Button variant="ghost" className="text-xs text-nexus-accent border border-nexus-accent/20">Manage</Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {userSettingsTab === 'APPEARANCE' && (
+                    <div className="space-y-8 animate-fade-in">
+                        <h2 className="text-2xl font-bold text-white mb-6">Appearance</h2>
+                        
+                        {/* Theme Selection */}
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-500 uppercase mb-4">Theme</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {THEMES.map(theme => (
+                                    <button 
+                                        key={theme.id}
+                                        onClick={() => handleThemeChange(theme.color)}
+                                        className="group relative h-24 rounded-xl border-2 border-slate-700 hover:border-white transition-all overflow-hidden"
+                                    >
+                                        <div className={`absolute inset-0 ${theme.bg}`}></div>
+                                        <div className="absolute inset-x-0 bottom-0 h-8 bg-slate-900/80 flex items-center justify-center font-bold text-xs text-white">
+                                            {theme.name}
+                                        </div>
+                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full" style={{ backgroundColor: theme.color }}></div>
+                                        {/* Checkmark if active? Hard to track active CSS var without reading DOM, skipping visual check for now */}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Message Display */}
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-500 uppercase mb-4">Message Display</h3>
+                            <div className="bg-slate-900 rounded-xl border border-slate-700 p-4 space-y-4">
+                                <RadioCard 
+                                    title="Comfortable" 
+                                    description="Modern look with avatars and spacing." 
+                                    selected={messageDensity === 'comfortable'}
+                                    onClick={() => setMessageDensity('comfortable')}
+                                    color="bg-slate-800"
+                                    icon={<MessageSquare size={20} />}
+                                />
+                                <RadioCard 
+                                    title="Compact" 
+                                    description="Fit more messages on screen. No avatars." 
+                                    selected={messageDensity === 'compact'}
+                                    onClick={() => setMessageDensity('compact')}
+                                    color="bg-slate-800"
+                                    icon={<Hash size={20} />}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {userSettingsTab === 'VOICE_VIDEO' && (
+                    <div className="space-y-8 animate-fade-in">
+                        <h2 className="text-2xl font-bold text-white mb-6">Voice & Video</h2>
+                        
+                        <div className="grid grid-cols-2 gap-6">
+                            <Select label="Input Device" options={[{ label: 'Default - Microphone', value: 'default' }]} />
+                            <Select label="Output Device" options={[{ label: 'Default - Headphones', value: 'default' }]} />
+                        </div>
+
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-500 uppercase mb-2">Input Volume</h3>
+                            <div className="flex items-center gap-4">
+                                <Volume2 size={20} className="text-slate-400" />
+                                <ProgressBar value={voiceConfig.volume} max={100} className="flex-1 h-2 bg-slate-700" />
+                                <span className="text-sm font-mono text-white">{voiceConfig.volume}%</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-900 p-6 rounded-xl border border-slate-700">
+                             <h3 className="text-sm font-bold text-slate-500 uppercase mb-4">Mic Test</h3>
+                             <div className="h-4 bg-slate-800 rounded-full overflow-hidden">
+                                 <div className="h-full bg-green-500 w-[60%] animate-pulse"></div>
+                             </div>
+                             <p className="text-xs text-slate-500 mt-2">Speak into your microphone to test.</p>
+                        </div>
+
+                        <div>
+                             <h3 className="text-sm font-bold text-slate-500 uppercase mb-4">Video Settings</h3>
+                             <div className="bg-black aspect-video rounded-xl border border-slate-700 flex items-center justify-center relative overflow-hidden">
+                                 <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center text-slate-500">
+                                     <Camera size={48} className="mb-2" />
+                                     <Button variant="secondary" className="text-xs">Preview Camera</Button>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {userSettingsTab === 'KEYBINDS' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <h2 className="text-2xl font-bold text-white mb-6">Keybinds</h2>
+                        <div className="space-y-2">
+                             {[
+                                { action: 'Push to Talk', keys: ['V'] },
+                                { action: 'Toggle Mute', keys: ['Ctrl', 'Shift', 'M'] },
+                                { action: 'Toggle Deafen', keys: ['Ctrl', 'Shift', 'D'] },
+                                { action: 'Answer Call', keys: ['Ctrl', 'Enter'] },
+                                { action: 'Decline Call', keys: ['Esc'] },
+                             ].map((bind, i) => (
+                                 <div key={i} className="flex justify-between items-center p-3 bg-slate-900 rounded-lg border border-slate-700 hover:border-nexus-accent transition-colors">
+                                     <span className="font-bold text-slate-300">{bind.action}</span>
+                                     <div className="flex gap-1">
+                                         {bind.keys.map(k => <Keycap key={k}>{k}</Keycap>)}
+                                     </div>
+                                 </div>
+                             ))}
+                        </div>
+                    </div>
+                )}
+                
+                {userSettingsTab === 'STREAMER' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <h2 className="text-2xl font-bold text-white mb-6">Streamer Mode</h2>
+                        <div className="bg-nexus-accent/10 border border-nexus-accent/30 p-4 rounded-xl flex items-start gap-4 mb-6">
+                            <Monitor className="text-nexus-accent mt-1" />
+                            <div>
+                                <h3 className="font-bold text-white">Streamer Mode is {true ? 'Enabled' : 'Disabled'}</h3>
+                                <p className="text-sm text-slate-400">We automatically hide sensitive details when we detect OBS or XSplit.</p>
+                            </div>
+                            <Switch checked={true} onChange={() => {}} />
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <div className="text-white font-medium">Hide Personal Information</div>
+                                    <div className="text-xs text-slate-500">Emails, connected accounts, and notes.</div>
+                                </div>
+                                <Switch checked={true} onChange={() => {}} />
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <div className="text-white font-medium">Hide Invite Links</div>
+                                    <div className="text-xs text-slate-500">Prevents randoms from joining your servers.</div>
+                                </div>
+                                <Switch checked={true} onChange={() => {}} />
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <div className="text-white font-medium">Disable Sounds</div>
+                                    <div className="text-xs text-slate-500">Mutes all notification sounds.</div>
+                                </div>
+                                <Switch checked={false} onChange={() => {}} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+  };
+
+  const renderServerSettings = () => {
+      if (!activeServer) return null;
+
+      const tabs = [
+          { id: 'OVERVIEW', label: 'Overview', icon: <Hash size={18} /> },
+          { id: 'ROLES', label: 'Roles', icon: <Shield size={18} /> },
+          { id: 'EMOJI', label: 'Emoji', icon: <Smile size={18} /> },
+          { id: 'AUDIT', label: 'Audit Log', icon: <FileText size={18} /> },
+          { id: 'BANS', label: 'Bans', icon: <X size={18} /> },
+      ];
+
+      const selectedRole = activeServer.roles?.find(r => r.id === selectedRoleId);
+
+      return (
+        <div className="flex h-full">
+            {/* Sidebar */}
+            <div className="w-64 bg-slate-900 border-r border-slate-800 p-4 flex flex-col">
+                <div className="mb-4 px-2">
+                    <h2 className="font-bold text-white truncate text-sm uppercase text-slate-500">{activeServer.name}</h2>
+                </div>
+                <div className="space-y-1 flex-1">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setServerSettingsTab(tab.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${serverSettingsTab === tab.id ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}`}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
+                    <div className="my-4 border-t border-slate-800" />
+                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-red-400 hover:bg-red-500/10 hover:text-red-500">
+                        <Trash2 size={18} />
+                        Delete Server
+                    </button>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 bg-slate-800 p-8 overflow-y-auto custom-scrollbar">
+                {serverSettingsTab === 'OVERVIEW' && (
+                    <div className="space-y-8 animate-fade-in max-w-2xl">
+                        <h2 className="text-2xl font-bold text-white mb-6">Server Overview</h2>
+                        
+                        <div className="flex gap-6 items-start">
+                            <div className="w-24 h-24 relative group cursor-pointer" onClick={() => serverIconInputRef.current?.click()}>
+                                <img src={activeServer.icon} className="w-full h-full rounded-full object-cover border-4 border-slate-900 shadow-lg" />
+                                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Camera size={24} className="text-white" />
+                                </div>
+                                <input type="file" ref={serverIconInputRef} className="hidden" accept="image/*" onChange={handleServerIconUpload} />
+                                <div className="text-[10px] text-center mt-2 text-slate-500">Min 128x128</div>
+                            </div>
+                            <div className="flex-1 space-y-4">
+                                <Input label="Server Name" value={activeServer.name} onChange={(e: any) => handleUpdateServer({ name: e.target.value })} />
+                                <Select 
+                                    label="Server Region"
+                                    value={activeServer.region}
+                                    onChange={(e: any) => handleUpdateServer({ region: e.target.value })}
+                                    options={[
+                                        { label: 'US East', value: 'US-East' },
+                                        { label: 'Europe', value: 'EU-West' },
+                                        { label: 'Asia', value: 'Asia' },
+                                    ]}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="border-t border-slate-700 pt-6">
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Server Banner Background</label>
+                            <div 
+                                className="h-32 bg-slate-900 rounded-xl border-2 border-dashed border-slate-700 hover:border-nexus-accent flex items-center justify-center cursor-pointer transition-colors relative overflow-hidden group"
+                                onClick={() => bannerInputRef.current?.click()}
+                            >
+                                {activeServer.banner ? (
+                                    <img src={activeServer.banner} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="flex flex-col items-center text-slate-500">
+                                        <Upload size={24} className="mb-2" />
+                                        <span className="text-xs font-bold">Upload Banner</span>
+                                        <span className="text-[10px]">PNG, JPG (Min 960x540)</span>
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                     <span className="font-bold text-white">Change Banner</span>
+                                </div>
+                            </div>
+                            <input type="file" ref={bannerInputRef} className="hidden" onChange={handleServerBannerUpload} />
+                        </div>
+                    </div>
+                )}
+
+                {serverSettingsTab === 'ROLES' && (
+                    <div className="flex h-full gap-6 animate-fade-in">
+                        {/* Roles List */}
+                        <div className="w-48 flex flex-col gap-2">
+                             <Button variant="secondary" className="mb-2 text-xs justify-center"><Plus size={14} className="mr-1"/> Create Role</Button>
+                             {activeServer.roles?.map(role => (
+                                 <button
+                                    key={role.id}
+                                    onClick={() => setSelectedRoleId(role.id)}
+                                    className={`flex items-center justify-between p-2 rounded text-sm transition-colors ${selectedRoleId === role.id ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700/50'}`}
+                                 >
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: role.color }}></div>
+                                        <span>{role.name}</span>
+                                    </div>
+                                    <ChevronLeft size={14} className="rotate-180 opacity-50" />
+                                 </button>
+                             ))}
+                        </div>
+                        
+                        {/* Role Details */}
+                        {selectedRole && (
+                             <div className="flex-1 bg-slate-900/50 rounded-xl border border-slate-700 p-6 overflow-y-auto custom-scrollbar">
+                                 <h3 className="text-xl font-bold text-white mb-6">Edit Role - {selectedRole.name}</h3>
+                                 <div className="grid grid-cols-2 gap-6 mb-6">
+                                     <Input label="Role Name" value={selectedRole.name} />
+                                     <div>
+                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Role Color</label>
+                                         <div className="flex gap-2">
+                                             <div className="w-10 h-10 rounded-lg border border-slate-600" style={{ backgroundColor: selectedRole.color }}></div>
+                                             <Input type="color" value={selectedRole.color} className="flex-1 p-1 h-10" />
+                                         </div>
+                                     </div>
+                                 </div>
+                                 
+                                 <div className="border-t border-slate-700 pt-4">
+                                     <h4 className="text-sm font-bold text-slate-400 uppercase mb-4">Permissions</h4>
+                                     <div className="space-y-4">
+                                         {[
+                                             { label: 'Administrator', desc: 'Grants all permissions. Dangerous!', active: selectedRole.permissions?.includes('ADMINISTRATOR') },
+                                             { label: 'View Channels', desc: 'Can view channels by default.', active: true },
+                                             { label: 'Send Messages', desc: 'Can send messages in text channels.', active: selectedRole.permissions?.includes('SEND_MESSAGES') },
+                                             { label: 'Kick Members', desc: 'Can remove members from the server.', active: selectedRole.permissions?.includes('KICK_MEMBERS') },
+                                         ].map((perm, i) => (
+                                             <div key={i} className="flex justify-between items-center py-2 border-b border-slate-800 last:border-0">
+                                                 <div>
+                                                     <div className="text-white font-medium">{perm.label}</div>
+                                                     <div className="text-xs text-slate-500">{perm.desc}</div>
+                                                 </div>
+                                                 <Switch checked={perm.active} onChange={() => {}} />
+                                             </div>
+                                         ))}
+                                     </div>
+                                 </div>
+                             </div>
+                        )}
+                    </div>
+                )}
+
+                {serverSettingsTab === 'EMOJI' && (
+                     <div className="space-y-6 animate-fade-in">
+                        <div className="flex justify-between items-center mb-4">
+                             <h2 className="text-2xl font-bold text-white">Server Emojis</h2>
+                             <Button variant="primary" className="text-sm"><Upload size={16} className="mr-2"/> Upload Emoji</Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                             {activeServer.emojis?.map(emoji => (
+                                 <div key={emoji.id} className="bg-slate-900 rounded-lg p-4 flex flex-col items-center gap-2 border border-slate-700 hover:border-nexus-accent transition-colors group relative">
+                                     <img src={emoji.url} className="w-8 h-8 group-hover:scale-125 transition-transform" />
+                                     <div className="text-xs text-slate-400 font-mono truncate w-full text-center">:{emoji.name}:</div>
+                                     <button className="absolute top-1 right-1 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                         <Trash2 size={12} />
+                                     </button>
+                                 </div>
+                             ))}
+                             {/* Mock Emojis if empty */}
+                             {(!activeServer.emojis || activeServer.emojis.length === 0) && [1,2,3,4,5].map(i => (
+                                 <div key={i} className="bg-slate-900 rounded-lg p-4 flex flex-col items-center gap-2 border border-slate-700 opacity-50">
+                                     <div className="w-8 h-8 bg-slate-800 rounded-full"></div>
+                                     <div className="w-12 h-2 bg-slate-800 rounded"></div>
+                                 </div>
+                             ))}
+                        </div>
+                     </div>
+                )}
+
+                {serverSettingsTab === 'AUDIT' && (
+                     <div className="space-y-4 animate-fade-in">
+                        <h2 className="text-2xl font-bold text-white mb-4">Audit Log</h2>
+                        <div className="flex gap-4 mb-4">
+                             <Input 
+                                placeholder="Filter by User ID" 
+                                className="text-sm"
+                                value={auditFilterUser}
+                                onChange={(e: any) => setAuditFilterUser(e.target.value)}
+                             />
+                             <Select options={[{ label: 'All Actions', value: 'ALL' }, { label: 'Member Kick', value: 'MEMBER_KICK' }]} className="text-sm" />
+                        </div>
+                        <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
+                             {MOCK_AUDIT_LOGS.filter(log => !auditFilterUser || log.userId.includes(auditFilterUser)).map(log => (
+                                 <div key={log.id} className="flex items-center gap-4 p-3 border-b border-slate-800 last:border-0 hover:bg-slate-800/50 transition-colors">
+                                     <div className="p-2 bg-slate-800 rounded-full text-slate-400">
+                                         <Shield size={16} />
+                                     </div>
+                                     <div className="flex-1">
+                                         <div className="flex items-center gap-2">
+                                             <span className="font-bold text-white">User {log.userId}</span>
+                                             <span className="text-slate-500 text-xs">performed</span>
+                                             <span className="text-nexus-accent font-mono text-xs font-bold">{log.action}</span>
+                                         </div>
+                                         <div className="text-xs text-slate-500">{log.details}</div>
+                                     </div>
+                                     <div className="text-xs text-slate-600 font-mono">
+                                         {log.timestamp.toLocaleDateString()}
+                                     </div>
+                                 </div>
+                             ))}
+                        </div>
+                     </div>
+                )}
+            </div>
+        </div>
+      );
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-200 font-sans">
@@ -542,6 +979,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
         {/* User Profile Modal */}
         <Modal isOpen={showUserProfile} onClose={() => setShowUserProfile(false)} size="lg">
             <Profile user={currentUser} isCurrentUser={true} onClose={() => setShowUserProfile(false)} />
+        </Modal>
+
+        {/* User Settings Modal */}
+        <Modal isOpen={showUserSettings} onClose={() => setShowUserSettings(false)} size="xl">
+            {renderUserSettings()}
+        </Modal>
+
+        {/* Server Settings Modal */}
+        <Modal isOpen={showServerSettings} onClose={() => setShowServerSettings(false)} size="xl">
+            {renderServerSettings()}
         </Modal>
 
         {/* Voice Join Confirmation Modal */}
