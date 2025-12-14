@@ -1,6 +1,6 @@
 
 import React, { Fragment } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, ChevronDown } from 'lucide-react';
 
 export const Button = ({ children, variant = 'primary', className = '', ...props }: any) => {
   const baseStyle = "px-6 py-2 rounded-lg font-display font-bold tracking-wider transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden group";
@@ -39,6 +39,23 @@ export const Input = ({ className = '', label, ...props }: any) => (
   </div>
 );
 
+export const Select = ({ className = '', label, options = [], ...props }: any) => (
+  <div className="w-full group">
+    {label && <label className="block text-xs font-bold text-slate-500 uppercase mb-1 group-focus-within:text-nexus-accent transition-colors duration-300">{label}</label>}
+    <div className="relative">
+      <select 
+        className={`w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-nexus-accent focus:ring-2 focus:ring-nexus-accent/20 transition-all duration-300 hover:border-slate-600 appearance-none cursor-pointer ${className}`}
+        {...props}
+      >
+        {options.map((opt: any) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+      <ChevronDown className="absolute right-4 top-3 text-slate-500 pointer-events-none group-hover:text-nexus-accent transition-colors" size={16} />
+    </div>
+  </div>
+);
+
 export const Switch = ({ checked, onChange, label }: any) => (
   <div className="flex items-center justify-between py-2 cursor-pointer group select-none" onClick={() => onChange(!checked)}>
     {label && <span className="text-slate-300 font-medium group-hover:text-white transition-colors">{label}</span>}
@@ -63,17 +80,24 @@ export const Keycap = ({ children, onClick, active }: any) => (
   </button>
 );
 
-export const RadioCard = ({ selected, onClick, title, color }: any) => (
+export const RadioCard = ({ selected, onClick, title, description, color, icon }: any) => (
   <button
     onClick={onClick}
-    className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-300 transform hover:scale-[1.02] active:scale-95 ${
+    className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-300 transform hover:scale-[1.02] active:scale-95 flex items-start gap-4 ${
       selected 
         ? 'border-nexus-accent bg-nexus-accent/10 ring-1 ring-nexus-accent shadow-[0_0_15px_rgba(139,92,246,0.2)]' 
         : 'border-slate-700 bg-slate-800/50 hover:border-slate-500 hover:bg-slate-800'
     }`}
   >
-    <div className={`w-8 h-8 rounded-full mb-3 ${color} shadow-lg`}></div>
-    <div className={`font-bold ${selected ? 'text-nexus-accent' : 'text-slate-300'}`}>{title}</div>
+    {icon && (
+        <div className={`p-3 rounded-lg ${selected ? 'bg-nexus-accent text-white' : 'bg-slate-700 text-slate-400'}`}>
+            {icon}
+        </div>
+    )}
+    <div>
+        <div className={`font-bold ${selected ? 'text-nexus-accent' : 'text-slate-300'}`}>{title}</div>
+        {description && <div className="text-xs text-slate-500 mt-1">{description}</div>}
+    </div>
   </button>
 );
 
@@ -108,7 +132,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: any) =>
   
   const maxSizes = {
     sm: 'max-w-md',
-    md: 'max-w-xl', // Slightly wider for standard modals
+    md: 'max-w-xl', 
     lg: 'max-w-4xl',
     xl: 'max-w-6xl'
   };
