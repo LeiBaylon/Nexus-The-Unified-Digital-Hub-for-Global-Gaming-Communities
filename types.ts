@@ -71,6 +71,7 @@ export interface Role {
   name: string;
   color: string;
   isHoisted?: boolean;
+  isMentionable?: boolean;
   permissions?: string[];
 }
 
@@ -91,18 +92,60 @@ export interface AuditLogEntry {
   details?: string;
 }
 
+export interface ServerFeatures {
+  // Gaming
+  gameTitle?: string;
+  minRank?: string;
+  scrimScheduler?: boolean;
+  clipFeed?: boolean;
+  patchNotes?: boolean;
+  voiceOverlays?: boolean;
+  stratBoard?: boolean;
+  streamerMode?: boolean;
+  toxicityFilter?: 'LOW' | 'MEDIUM' | 'HIGH';
+  lfgBot?: boolean;
+
+  // Social
+  welcomeSystem?: boolean;
+  musicBot?: boolean;
+  levelingSystem?: boolean;
+  eventCalendar?: boolean;
+  memeGenerator?: boolean;
+  birthdayBot?: boolean;
+  reactionRoles?: boolean;
+  tempVoiceChannels?: boolean;
+  polls?: boolean;
+  mediaGallery?: boolean;
+
+  // Clan
+  applicationSystem?: boolean;
+  attendanceTracker?: boolean;
+  lootSystem?: 'DKP' | 'COUNCIL' | 'ROLL';
+  diplomacyTracker?: boolean;
+  hierarchyView?: boolean;
+  duesTracker?: boolean;
+  squads?: boolean;
+  warRoom?: boolean;
+  emergencyAlerts?: boolean;
+  recruitmentStatus?: 'OPEN' | 'CLOSED' | 'INVITE';
+}
+
 export interface Server {
   id: string;
   name: string;
   icon: string;
+  banner?: string;
   description?: string;
   channels: Channel[];
   region?: string;
   roles?: Role[];
   emojis?: ServerEmoji[];
   systemChannelId?: string;
+  afkChannelId?: string;
   verificationLevel?: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH';
   explicitContentFilter?: 'DISABLED' | 'MEMBERS_WITHOUT_ROLES' | 'ALL_MEMBERS';
+  template?: 'GAMING' | 'SOCIAL' | 'CLAN';
+  features?: ServerFeatures;
 }
 
 export interface MusicTrack {
