@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Message, User, Channel, SoundEffect } from '../types';
 import { Avatar, Button, Badge, EmojiPicker, ContextMenu, Modal, ConfirmModal, Input, RadioCard } from './UIComponents';
-import { Send, Hash, Bell, Users, Search, PlusCircle, Smile, Gift, Command, MoreVertical, Music, Zap, Image as ImageIcon, BarChart2, FileText, Check, Trophy, Filter, X, ChevronDown, Trash2, Pin, CornerUpLeft, ExternalLink, Brain, Globe, Copy, Flag, Share, CheckCircle, AlertTriangle, CheckCheck, Video, Loader2, UploadCloud } from 'lucide-react';
+import { Send, Hash, Bell, BellOff, Users, Search, PlusCircle, Smile, Gift, Command, MoreVertical, Music, Zap, Image as ImageIcon, BarChart2, FileText, Check, Trophy, Filter, X, ChevronDown, Trash2, Pin, CornerUpLeft, ExternalLink, Brain, Globe, Copy, Flag, Share, CheckCircle, AlertTriangle, CheckCheck, Video, Loader2, UploadCloud } from 'lucide-react';
 import { sendMessageToAI, generateAIImage, getAIStrategy, getAINews, generateAIVideo } from '../services/gemini';
 import { SOUND_EFFECTS } from '../constants';
 
@@ -53,6 +53,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
   // Pin State
   const [pinnedMessageIds, setPinnedMessageIds] = useState<string[]>([]);
   const [showPinnedMessages, setShowPinnedMessages] = useState(false);
+
+  // Mute State
+  const [isChannelMuted, setIsChannelMuted] = useState(false);
 
   // Message Deletion State
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
@@ -550,7 +553,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
              </button>
 
              <div className="h-6 w-px bg-slate-700 mx-1 hidden md:block"></div>
-             <Bell className="w-5 h-5 cursor-pointer hover:text-white hidden md:block" />
+             
+             <button 
+                onClick={() => setIsChannelMuted(!isChannelMuted)}
+                className="hidden md:block transition-colors p-1 rounded hover:bg-slate-700/50"
+                title={isChannelMuted ? "Unmute Channel" : "Mute Channel"}
+             >
+                {isChannelMuted ? (
+                    <BellOff className="w-5 h-5 text-red-500" />
+                ) : (
+                    <Bell className="w-5 h-5 text-slate-400 hover:text-white" />
+                )}
+             </button>
+
              <Users className="w-5 h-5 cursor-pointer hover:text-white md:hidden" />
           </div>
         </div>

@@ -30,6 +30,7 @@ export interface User {
   avatar: string;
   banner?: string;
   bio?: string;
+  customStatus?: string; // New field
   status: UserStatus;
   gameActivity?: string;
   level: number;
@@ -70,22 +71,38 @@ export interface Role {
   name: string;
   color: string;
   isHoisted?: boolean;
+  permissions?: string[];
 }
 
 export interface ServerEmoji {
   id: string;
   name: string;
   url: string;
+  creatorId?: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  userId: string;
+  targetId?: string;
+  targetType?: 'USER' | 'CHANNEL' | 'ROLE' | 'SERVER';
+  timestamp: Date;
+  details?: string;
 }
 
 export interface Server {
   id: string;
   name: string;
   icon: string;
+  description?: string;
   channels: Channel[];
   region?: string;
   roles?: Role[];
   emojis?: ServerEmoji[];
+  systemChannelId?: string;
+  verificationLevel?: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH';
+  explicitContentFilter?: 'DISABLED' | 'MEMBERS_WITHOUT_ROLES' | 'ALL_MEMBERS';
 }
 
 export interface MusicTrack {

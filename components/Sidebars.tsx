@@ -1,8 +1,9 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Server, Channel, User, MusicTrack } from '../types';
 import { Avatar, ProgressBar, ConfirmModal } from './UIComponents';
-import { Hash, Volume2, Mic, MicOff, Headphones, VolumeX, Settings, Plus, Play, Pause, SkipForward, Disc, Trophy, Globe } from 'lucide-react';
+import { Hash, Volume2, Mic, MicOff, Headphones, VolumeX, Settings, Plus, Play, Pause, SkipForward, Disc, Trophy, Globe, Users, ChevronDown, ChevronRight } from 'lucide-react';
 import { MUSIC_TRACKS } from '../constants';
 
 // --- Music Player Widget ---
@@ -135,6 +136,7 @@ interface ChannelSidebarProps {
 export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeChannelId, onSelectChannel, currentUser, onOpenSettings, onOpenProfile, onOpenServerSettings, users = [], onJoinVoice }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
+  const [isMembersExpanded, setIsMembersExpanded] = useState(false);
 
   const handleToggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -197,7 +199,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
               ))}
             </div>
 
-            <div>
+            <div className="mb-4">
               <h3 className="text-[10px] font-bold text-slate-500 uppercase px-2 mb-1 flex items-center justify-between group cursor-pointer">
                 <span>Voice Channels</span>
                 <Plus size={12} className="opacity-0 group-hover:opacity-100" />
@@ -245,6 +247,37 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
                 </div>
               ))}
             </div>
+
+            {/* Collapsible Members List */}
+            <div className="mt-2">
+                <button 
+                    onClick={() => setIsMembersExpanded(!isMembersExpanded)}
+                    className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold text-slate-500 uppercase hover:text-slate-300 transition-colors"
+                >
+                    <span>Server Members</span>
+                    {isMembersExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                </button>
+                {isMembersExpanded && (
+                    <div className="space-y-1 mt-1 pl-2 animate-slide-up">
+                        {users.map(user => (
+                            <div key={user.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-700/50 cursor-pointer group">
+                                <Avatar src={user.avatar} status={user.status} size="sm" className="w-6 h-6" />
+                                <div className="min-w-0">
+                                    <div className={`text-xs font-bold truncate ${user.id === '4' ? 'text-nexus-glow' : 'text-slate-300'} group-hover:text-white`}>
+                                        {user.username}
+                                    </div>
+                                    {user.customStatus && (
+                                        <div className="text-[10px] text-slate-500 truncate group-hover:text-slate-400">
+                                            {user.customStatus}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
           </>
         ) : (
           <div className="space-y-1">
@@ -258,19 +291,25 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
                   <Avatar src={user.avatar} status={user.status} size="md" className="w-8 h-8" />
                   <div className="text-left overflow-hidden min-w-0 flex-1">
                      <div className={`font-bold truncate text-sm ${activeChannelId === user.id ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>{user.username}</div>
-                     <div className="text-[10px] truncate flex items-center gap-1 font-medium">
-                        {user.status === 'PLAYING' ? (
-                           <span className="text-nexus-accent">Playing {user.gameActivity}</span>
-                        ) : user.status === 'ONLINE' ? (
-                           <span className="text-green-500">Online</span>
-                        ) : user.status === 'IDLE' ? (
-                           <span className="text-yellow-500">Idle</span>
-                        ) : user.status === 'DND' ? (
-                           <span className="text-red-500">Do Not Disturb</span>
-                        ) : (
-                           <span className="text-slate-500">Offline</span>
-                        )}
-                     </div>
+                     {user.customStatus ? (
+                        <div className="text-[10px] truncate font-medium text-nexus-glow">
+                           {user.customStatus}
+                        </div>
+                     ) : (
+                        <div className="text-[10px] truncate flex items-center gap-1 font-medium">
+                           {user.status === 'PLAYING' ? (
+                              <span className="text-nexus-accent">Playing {user.gameActivity}</span>
+                           ) : user.status === 'ONLINE' ? (
+                              <span className="text-green-500">Online</span>
+                           ) : user.status === 'IDLE' ? (
+                              <span className="text-yellow-500">Idle</span>
+                           ) : user.status === 'DND' ? (
+                              <span className="text-red-500">Do Not Disturb</span>
+                           ) : (
+                              <span className="text-slate-500">Offline</span>
+                           )}
+                        </div>
+                     )}
                   </div>
                </button>
              ))}
@@ -289,10 +328,16 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({ server, activeCh
                {currentUser.username}
                <span className="text-[10px] text-nexus-accent bg-nexus-accent/10 px-1 rounded border border-nexus-accent/20">LVL {currentUser.level}</span>
             </div>
-            <div className="text-[10px] text-slate-400 truncate flex items-center gap-1">
-               #{currentUser.id.padStart(4, '0')}
-               {isDeafened ? <span className="text-red-400 font-bold">• Deafened</span> : isMuted ? <span className="text-red-400 font-bold">• Muted</span> : null}
-            </div>
+            {currentUser.customStatus ? (
+                <div className="text-[10px] text-nexus-glow truncate font-medium" title={currentUser.customStatus}>
+                    {currentUser.customStatus}
+                </div>
+            ) : (
+                <div className="text-[10px] text-slate-400 truncate flex items-center gap-1">
+                   #{currentUser.id.padStart(4, '0')}
+                   {isDeafened ? <span className="text-red-400 font-bold">• Deafened</span> : isMuted ? <span className="text-red-400 font-bold">• Muted</span> : null}
+                </div>
+            )}
           </div>
           <button onClick={(e) => { e.stopPropagation(); onOpenSettings(); }} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-transform hover:rotate-90">
              <Settings size={16} />

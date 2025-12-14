@@ -1,5 +1,6 @@
 
-import { Server, User, UserStatus, MusicTrack, SoundEffect, InventoryItem, Tournament, Clip } from './types';
+
+import { Server, User, UserStatus, MusicTrack, SoundEffect, InventoryItem, Tournament, Clip, AuditLogEntry } from './types';
 import { Sparkles, Trophy, Zap, Ghost, Skull, Crown, Crosshair, Shield } from 'lucide-react';
 
 export const MOCK_USERS: User[] = [
@@ -9,6 +10,7 @@ export const MOCK_USERS: User[] = [
     avatar: 'https://picsum.photos/id/64/200/200', 
     banner: 'https://picsum.photos/id/132/800/300',
     bio: 'Support main looking for a cracked ADC. Do not DM me if you tilt.',
+    customStatus: 'Grinding ranked 🛡️',
     status: UserStatus.PLAYING, 
     gameActivity: 'League of Legends', 
     level: 42, 
@@ -26,6 +28,7 @@ export const MOCK_USERS: User[] = [
     avatar: 'https://picsum.photos/id/65/200/200', 
     banner: 'https://picsum.photos/id/142/800/300',
     bio: 'Professional button masher. Speedrunner.',
+    customStatus: 'Speedrunning Life',
     status: UserStatus.ONLINE, 
     level: 88, 
     xp: 20, 
@@ -51,6 +54,7 @@ export const MOCK_USERS: User[] = [
     avatar: 'https://picsum.photos/id/20/200/200', 
     banner: 'https://picsum.photos/id/54/800/300',
     bio: 'I am the system. I am the strategy.',
+    customStatus: 'Processing 1M+ strats/sec',
     status: UserStatus.ONLINE, 
     gameActivity: 'Analyzing Strategies', 
     level: 999, 
@@ -64,15 +68,20 @@ export const MOCK_SERVERS: Server[] = [
     id: 'nexus-home',
     name: 'Nexus HQ',
     icon: 'https://picsum.photos/id/100/100/100',
+    description: 'The official HQ for all things Nexus. Join us for community events, updates, and support.',
     region: 'US East',
+    verificationLevel: 'HIGH',
+    systemChannelId: 'gen',
     roles: [
-      { id: 'r1', name: 'Admin', color: '#ef4444', isHoisted: true },
-      { id: 'r2', name: 'Moderator', color: '#3b82f6', isHoisted: true },
-      { id: 'r3', name: 'Member', color: '#22c55e', isHoisted: false }
+      { id: 'r1', name: 'Admin', color: '#ef4444', isHoisted: true, permissions: ['ADMINISTRATOR'] },
+      { id: 'r2', name: 'Moderator', color: '#3b82f6', isHoisted: true, permissions: ['KICK_MEMBERS', 'BAN_MEMBERS', 'MANAGE_MESSAGES'] },
+      { id: 'r3', name: 'Member', color: '#22c55e', isHoisted: false, permissions: ['SEND_MESSAGES', 'CONNECT'] }
     ],
     emojis: [
-      { id: 'e1', name: 'nexus_pog', url: 'https://picsum.photos/id/30/32/32' },
-      { id: 'e2', name: 'nexus_hype', url: 'https://picsum.photos/id/31/32/32' }
+      { id: 'e1', name: 'nexus_pog', url: 'https://picsum.photos/id/30/32/32', creatorId: '1' },
+      { id: 'e2', name: 'nexus_hype', url: 'https://picsum.photos/id/31/32/32', creatorId: '1' },
+      { id: 'e3', name: 'gg_wp', url: 'https://picsum.photos/id/32/32/32', creatorId: '2' },
+      { id: 'e4', name: 'pepe_sad', url: 'https://picsum.photos/id/33/32/32', creatorId: '3' }
     ],
     channels: [
       { id: 'gen', name: 'general', type: 'TEXT' },
@@ -87,6 +96,7 @@ export const MOCK_SERVERS: Server[] = [
     name: 'Valorant Elites',
     icon: 'https://picsum.photos/id/101/100/100',
     region: 'EU West',
+    verificationLevel: 'MEDIUM',
     roles: [
       { id: 'vr1', name: 'Radiant', color: '#fbbf24', isHoisted: true },
       { id: 'vr2', name: 'Agent', color: '#94a3b8', isHoisted: false }
@@ -102,12 +112,20 @@ export const MOCK_SERVERS: Server[] = [
     name: 'MMO Legends',
     icon: 'https://picsum.photos/id/102/100/100',
     region: 'US West',
+    verificationLevel: 'LOW',
     roles: [{ id: 'mr1', name: 'Guild Master', color: '#f59e0b', isHoisted: true }],
     channels: [
       { id: 'mmo-gen', name: 'tavern', type: 'TEXT' },
       { id: 'mmo-raid', name: 'raid-planning', type: 'TEXT' },
     ]
   }
+];
+
+export const MOCK_AUDIT_LOGS: AuditLogEntry[] = [
+    { id: 'al1', action: 'MEMBER_KICK', userId: '1', targetId: 'b1', targetType: 'USER', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), details: 'Violation of rules' },
+    { id: 'al2', action: 'ROLE_CREATE', userId: '1', targetId: 'r3', targetType: 'ROLE', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48), details: 'Created "Member" role' },
+    { id: 'al3', action: 'CHANNEL_UPDATE', userId: '1', targetId: 'gen', targetType: 'CHANNEL', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 50), details: 'Changed topic to "Welcome!"' },
+    { id: 'al4', action: 'MEMBER_BAN', userId: '1', targetId: 'b2', targetType: 'USER', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72), details: 'Spamming invite links' },
 ];
 
 export const INITIAL_MESSAGES = [
