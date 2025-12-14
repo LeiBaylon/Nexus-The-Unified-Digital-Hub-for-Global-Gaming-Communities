@@ -11,7 +11,8 @@ import {
   Shield, Smile, Activity, Search, Save, Bell, Gamepad2, Users, GraduationCap, ChevronLeft,
   Mic, Volume2, Keyboard, Monitor, Laptop, MousePointer,
   Check, Lock, Unlock, Eye, MessageSquare, AtSign, MousePointer2, Speaker, Move, FileText,
-  Filter, ChevronDown, Clock, AlertCircle, Download, Upload
+  Filter, ChevronDown, Clock, AlertCircle, Download, Upload,
+  Signal, Video, VideoOff, MicOff, VolumeX, Headphones
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -31,6 +32,18 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
   const [userSettingsTab, setUserSettingsTab] = useState('MY_ACCOUNT');
+
+  // Voice Join State
+  const [pendingVoiceChannel, setPendingVoiceChannel] = useState<Channel | null>(null);
+  const [voiceConfig, setVoiceConfig] = useState({
+      muted: false,
+      deafened: false,
+      video: false,
+      noiseSuppression: true,
+      inputDevice: 'default',
+      outputDevice: 'default',
+      volume: 75
+  });
 
   // Server Creation State
   const [createStep, setCreateStep] = useState(1);
@@ -107,11 +120,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
       audio.play().catch(e => console.error("Audio play error", e));
   };
 
-  const handleJoinVoice = (channel: Channel) => {
-      setActiveChannelId(channel.id);
+  const handleJoinVoiceRequest = (channel: Channel) => {
+      // Don't open modal if already in the channel
+      if (activeChannelId === channel.id) return;
+      setPendingVoiceChannel(channel);
+  };
+
+  const confirmVoiceJoin = () => {
+      if (!pendingVoiceChannel) return;
+      
+      setActiveChannelId(pendingVoiceChannel.id);
+      
       // Feedback sound for joining voice
       const sound = SOUND_EFFECTS.find(s => s.label === 'Level Up');
       if (sound) handlePlaySound(sound);
+      
+      setPendingVoiceChannel(null);
   };
 
   const resetCreateServer = () => {
@@ -302,7 +326,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
                 onOpenProfile={() => setShowUserProfile(true)}
                 onOpenServerSettings={() => setShowServerSettings(true)}
                 users={MOCK_USERS}
-                onJoinVoice={handleJoinVoice}
+                onJoinVoice={handleJoinVoiceRequest}
             />
         )}
 
@@ -418,6 +442,124 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
         <Modal isOpen={showUserProfile} onClose={() => setShowUserProfile(false)} size="lg">
             <Profile user={currentUser} isCurrentUser={true} onClose={() => setShowUserProfile(false)} />
         </Modal>
+
+        {/* Voice Join Confirmation Modal */}
+        {pendingVoiceChannel && (
+            <Modal isOpen={!!pendingVoiceChannel} onClose={() => setPendingVoiceChannel(null)} title="Connect to Voice" size="lg">
+                <div className="p-0 flex h-[480px]">
+                    {/* Left Panel: Preview */}
+                    <div className="w-2/3 bg-black/50 p-6 flex flex-col items-center justify-center relative border-r border-slate-800">
+                        {/* Camera Preview */}
+                        <div className="w-full aspect-video bg-slate-900 rounded-xl mb-6 relative overflow-hidden flex items-center justify-center border border-slate-700 shadow-2xl">
+                            {voiceConfig.video ? (
+                                <div className="absolute inset-0 bg-slate-800">
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                         <div className="animate-pulse flex flex-col items-center gap-2">
+                                             <div className="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center"><Camera size={32} className="text-slate-500"/></div>
+                                             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Camera Preview</span>
+                                         </div>
+                                    </div>
+                                    {/* Mock Camera Feed UI */}
+                                    <div className="absolute bottom-4 left-4 bg-black/60 px-2 py-1 rounded text-[10px] text-white flex items-center gap-1">
+                                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div> REC
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center text-slate-600 gap-2">
+                                    <VideoOff size={48} />
+                                    <span className="font-bold">Camera is Off</span>
+                                </div>
+                            )}
+                            
+                            {/* User Avatar Overlay if no video */}
+                            {!voiceConfig.video && (
+                                <div className="absolute bottom-4 left-4">
+                                     <Avatar src={currentUser.avatar} size="md" className="border-2 border-slate-900" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Quick Controls */}
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={() => setVoiceConfig(p => ({ ...p, muted: !p.muted }))}
+                                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${voiceConfig.muted ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
+                            >
+                                {voiceConfig.muted ? <MicOff size={24} /> : <Mic size={24} />}
+                            </button>
+                            <button 
+                                onClick={() => setVoiceConfig(p => ({ ...p, deafened: !p.deafened }))}
+                                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${voiceConfig.deafened ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
+                            >
+                                {voiceConfig.deafened ? <VolumeX size={24} /> : <Headphones size={24} />}
+                            </button>
+                            <button 
+                                onClick={() => setVoiceConfig(p => ({ ...p, video: !p.video }))}
+                                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${voiceConfig.video ? 'bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
+                            >
+                                {voiceConfig.video ? <Video size={24} /> : <VideoOff size={24} />}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Right Panel: Settings & Info */}
+                    <div className="w-1/3 bg-slate-900 p-6 flex flex-col">
+                        <div className="mb-6">
+                            <h3 className="font-bold text-white text-lg mb-1 truncate">{pendingVoiceChannel.name}</h3>
+                            <div className="flex items-center gap-2 text-xs text-nexus-glow font-bold">
+                                <Signal size={12} className="animate-pulse" />
+                                12ms • US-East
+                            </div>
+                        </div>
+
+                        <div className="mb-6 flex-1 overflow-y-auto custom-scrollbar">
+                            <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-3 flex items-center gap-2">
+                                <Users size={12} /> Who's Here
+                            </h4>
+                            <div className="space-y-2">
+                                {MOCK_USERS.slice(0, 3).map(u => (
+                                    <div key={u.id} className="flex items-center gap-2 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                                        <Avatar src={u.avatar} size="sm" className="w-6 h-6" />
+                                        <span className="text-sm font-bold text-slate-300 truncate">{u.username}</span>
+                                    </div>
+                                ))}
+                                <div className="text-xs text-slate-500 text-center italic mt-2">+ 4 others</div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Input Device</label>
+                                <Select 
+                                    className="text-xs py-1.5"
+                                    value={voiceConfig.inputDevice}
+                                    onChange={(e: any) => setVoiceConfig(p => ({ ...p, inputDevice: e.target.value }))}
+                                    options={[{ label: 'Default - Microphone', value: 'default' }, { label: 'Yeti Stereo Microphone', value: 'yeti' }]}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Output Device</label>
+                                <Select 
+                                    className="text-xs py-1.5"
+                                    value={voiceConfig.outputDevice}
+                                    onChange={(e: any) => setVoiceConfig(p => ({ ...p, outputDevice: e.target.value }))}
+                                    options={[{ label: 'Default - Headphones', value: 'default' }, { label: 'External Speakers', value: 'speakers' }]}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="text-xs font-bold text-slate-300">Noise Suppression</div>
+                                <Switch checked={voiceConfig.noiseSuppression} onChange={(c: boolean) => setVoiceConfig(p => ({ ...p, noiseSuppression: c }))} />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 mt-auto">
+                            <Button variant="ghost" className="flex-1" onClick={() => setPendingVoiceChannel(null)}>Cancel</Button>
+                            <Button variant="success" className="flex-1" onClick={confirmVoiceJoin}>Join Voice</Button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+        )}
 
         {/* User Settings Modal */}
         <Modal isOpen={showUserSettings} onClose={() => setShowUserSettings(false)} title="User Settings" size="lg">
