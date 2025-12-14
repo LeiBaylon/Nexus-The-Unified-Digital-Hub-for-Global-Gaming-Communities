@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Server, Channel, Message, SoundEffect, Role } from '../types';
 import { MOCK_SERVERS, INITIAL_MESSAGES, MOCK_USERS, MOCK_AUDIT_LOGS, SOUND_EFFECTS } from '../constants';
@@ -10,7 +9,9 @@ import { Modal, Button, Input, Switch, Tabs, Avatar, ConfirmModal, Select, Radio
 import { 
   Settings, LogOut, Plus, Trash2, X, Image as ImageIcon, Camera, Globe, Copy, 
   Shield, Smile, Activity, Search, Save, Bell, Gamepad2, Users, GraduationCap, ChevronLeft,
-  Mic, Volume2, Keyboard, Monitor, Laptop, MousePointer
+  Mic, Volume2, Keyboard, Monitor, Laptop, MousePointer,
+  Check, Lock, Unlock, Eye, MessageSquare, AtSign, MousePointer2, Speaker, Move, FileText,
+  Filter, ChevronDown, Clock, AlertCircle, Download, Upload
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -44,6 +45,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
 
   // Server Settings State
   const [serverSettingsTab, setServerSettingsTab] = useState('OVERVIEW');
+  // Roles State
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [roleTab, setRoleTab] = useState<'DISPLAY' | 'PERMISSIONS' | 'MEMBERS'>('DISPLAY');
+  // Emoji State
+  const [emojiTab, setEmojiTab] = useState<'EMOJI' | 'STICKERS'>('EMOJI');
+  // Audit Log State
+  const [auditFilterUser, setAuditFilterUser] = useState<string>('');
+  const [auditFilterAction, setAuditFilterAction] = useState<string>('');
   
   // Refs
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -52,6 +61,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
 
   const activeServer = servers.find(s => s.id === activeServerId);
   const activeChannel = activeServer?.channels.find(c => c.id === activeChannelId);
+
+  // Initialize selected role when server settings open
+  useEffect(() => {
+    if (showServerSettings && activeServer && activeServer.roles && activeServer.roles.length > 0 && !selectedRoleId) {
+        setSelectedRoleId(activeServer.roles[0].id);
+    }
+  }, [showServerSettings, activeServer]);
 
   // Handlers
   const handleSendMessage = (msg: Message) => {
@@ -228,6 +244,44 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
           />
       );
   };
+
+  const PERMISSION_GROUPS = [
+    {
+      name: "General Server Permissions",
+      perms: [
+        { id: "VIEW_CHANNELS", label: "View Channels", desc: "Allows members to view channels by default." },
+        { id: "MANAGE_CHANNELS", label: "Manage Channels", desc: "Allows members to create, edit, or delete channels." },
+        { id: "MANAGE_ROLES", label: "Manage Roles", desc: "Allows members to create new roles and edit roles lower than their own." },
+        { id: "MANAGE_EMOJIS", label: "Manage Emojis", desc: "Allows members to upload and delete custom emojis." },
+      ]
+    },
+    {
+      name: "Membership Permissions",
+      perms: [
+        { id: "CREATE_INVITE", label: "Create Invite", desc: "Allows members to invite new people to this server." },
+        { id: "KICK_MEMBERS", label: "Kick Members", desc: "Allows members to remove other members from this server." },
+        { id: "BAN_MEMBERS", label: "Ban Members", desc: "Allows members to permanently ban other members from this server." },
+      ]
+    },
+    {
+      name: "Text Channel Permissions",
+      perms: [
+        { id: "SEND_MESSAGES", label: "Send Messages", desc: "Allows members to send messages in text channels." },
+        { id: "EMBED_LINKS", label: "Embed Links", desc: "Links sent by users with this permission will have a preview." },
+        { id: "ATTACH_FILES", label: "Attach Files", desc: "Allows members to upload files or media." },
+        { id: "ADD_REACTIONS", label: "Add Reactions", desc: "Allows members to add new reactions to a message." },
+      ]
+    },
+    {
+       name: "Voice Channel Permissions",
+       perms: [
+         { id: "CONNECT", label: "Connect", desc: "Allows members to join voice channels." },
+         { id: "SPEAK", label: "Speak", desc: "Allows members to talk in voice channels." },
+         { id: "MUTE_MEMBERS", label: "Mute Members", desc: "Allows members to mute other members in voice channels." },
+         { id: "DEAFEN_MEMBERS", label: "Deafen Members", desc: "Allows members to deafen other members in voice channels." },
+       ]
+    }
+  ];
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-200 font-sans">
@@ -534,198 +588,408 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout }) => {
                             </button>
                         </div>
                     </div>
-                    <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
-                        <h2 className="text-2xl font-bold text-white mb-6">
-                            {serverSettingsTab === 'OVERVIEW' && 'Server Overview'}
-                            {serverSettingsTab === 'ROLES' && 'Roles'}
-                            {serverSettingsTab === 'EMOJIS' && 'Emoji'}
-                            {serverSettingsTab === 'AUDIT_LOG' && 'Audit Log'}
-                        </h2>
+                    <div className="flex-1 p-0 overflow-hidden flex flex-col">
+                        <div className="p-8 pb-0">
+                            <h2 className="text-2xl font-bold text-white mb-6">
+                                {serverSettingsTab === 'OVERVIEW' && 'Server Overview'}
+                                {serverSettingsTab === 'ROLES' && 'Roles'}
+                                {serverSettingsTab === 'EMOJIS' && 'Emoji'}
+                                {serverSettingsTab === 'AUDIT_LOG' && 'Audit Log'}
+                            </h2>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-8 pb-8">
+                            {serverSettingsTab === 'OVERVIEW' && (
+                                <div className="space-y-8 animate-fade-in max-w-2xl mx-auto">
+                                    {/* Banner Section */}
+                                    <div className="relative mb-10">
+                                        <div className="group rounded-xl overflow-hidden h-32 bg-slate-800 border-2 border-dashed border-slate-700 flex items-center justify-center cursor-pointer hover:border-nexus-accent transition-colors relative" onClick={() => bannerInputRef.current?.click()}>
+                                            {activeServer.banner ? (
+                                                <img src={activeServer.banner} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="flex flex-col items-center text-slate-500 group-hover:text-nexus-accent">
+                                                    <ImageIcon size={32} className="mb-2" />
+                                                    <span className="text-xs font-bold uppercase">Upload Banner</span>
+                                                </div>
+                                            )}
+                                            <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={handleServerBannerUpload} />
+                                        </div>
+                                        
+                                        {/* Icon Overlay */}
+                                        <div className="absolute -bottom-6 left-6 w-20 h-20 rounded-full border-4 border-slate-800 bg-slate-700 z-10 shadow-xl overflow-hidden group/icon cursor-pointer" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
+                                            <img src={activeServer.icon} className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/icon:opacity-100 flex items-center justify-center transition-opacity">
+                                                <Camera size={20} className="text-white" />
+                                            </div>
+                                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleServerIconUpload} />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-8 grid grid-cols-2 gap-6">
+                                        <div className="col-span-2">
+                                            <Input label="Server Name" value={activeServer.name} onChange={(e: any) => handleUpdateServer({ name: e.target.value })} />
+                                        </div>
+                                        
+                                        <div>
+                                            <Select 
+                                                label="Region"
+                                                value={activeServer.region} 
+                                                onChange={(e: any) => handleUpdateServer({ region: e.target.value })}
+                                                options={[
+                                                    { label: 'US East', value: 'US East' },
+                                                    { label: 'US West', value: 'US West' },
+                                                    { label: 'EU West', value: 'EU West' },
+                                                    { label: 'Asia', value: 'Asia' },
+                                                ]}
+                                            />
+                                        </div>
 
-                        {/* --- CONTENT FROM SNIPPET --- */}
-                        {serverSettingsTab === 'OVERVIEW' && (
-                             <div className="space-y-8 animate-fade-in max-w-2xl mx-auto">
-                                {/* Banner Section */}
-                                <div className="relative mb-10">
-                                    <div className="group rounded-xl overflow-hidden h-32 bg-slate-800 border-2 border-dashed border-slate-700 flex items-center justify-center cursor-pointer hover:border-nexus-accent transition-colors relative" onClick={() => bannerInputRef.current?.click()}>
-                                        {activeServer.banner ? (
-                                            <img src={activeServer.banner} className="w-full h-full object-cover" />
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Status</label>
+                                            <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-300">
+                                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                <span>Operational</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 space-y-4">
+                                        <h4 className="text-sm font-bold text-white flex items-center gap-2"><Settings size={14}/> Widget Settings</h4>
+                                        
+                                        <div>
+                                            <Select 
+                                                label="System Messages Channel"
+                                                value={activeServer.systemChannelId || ''} 
+                                                onChange={(e: any) => handleUpdateServer({ systemChannelId: e.target.value })}
+                                                options={[
+                                                    { label: 'No System Messages', value: '' },
+                                                    ...activeServer.channels.filter(c => c.type === 'TEXT').map(c => ({ label: `#${c.name}`, value: c.id }))
+                                                ]}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Select 
+                                                label="AFK Voice Channel"
+                                                value={activeServer.afkChannelId || ''} 
+                                                onChange={(e: any) => handleUpdateServer({ afkChannelId: e.target.value })}
+                                                options={[
+                                                    { label: 'No AFK Channel', value: '' },
+                                                    ...activeServer.channels.filter(c => c.type === 'VOICE').map(c => ({ label: `🔊 ${c.name}`, value: c.id }))
+                                                ]}
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-2">
+                                            <div>
+                                                <div className="text-sm font-medium text-white">Default Notification Settings</div>
+                                                <div className="text-xs text-slate-500">All messages vs mentions only</div>
+                                            </div>
+                                            <Switch checked={true} onChange={() => {}} />
+                                        </div>
+                                    </div>
+
+                                    {/* Invite Link Widget */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Invite Link</label>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-nexus-glow font-mono flex items-center justify-between">
+                                                <span>nexus.gg/{activeServer.id.slice(0,8)}</span>
+                                                <button className="text-slate-500 hover:text-white" title="Copy"><Copy size={14}/></button>
+                                            </div>
+                                            <Button variant="secondary" className="text-xs">Regenerate</Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {serverSettingsTab === 'ROLES' && (
+                                <div className="flex h-full gap-4 animate-fade-in pb-4">
+                                    {/* Roles List Sidebar */}
+                                    <div className="w-48 bg-slate-950/50 rounded-lg border border-slate-700/50 flex flex-col overflow-hidden">
+                                        <div className="p-3 bg-slate-900 border-b border-slate-700 flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-400 uppercase">Roles</span>
+                                            <button className="text-nexus-accent hover:text-white" title="Create Role"><Plus size={14}/></button>
+                                        </div>
+                                        <div className="overflow-y-auto custom-scrollbar p-2 space-y-1">
+                                            {activeServer.roles?.map(role => (
+                                                <div 
+                                                    key={role.id}
+                                                    onClick={() => setSelectedRoleId(role.id)}
+                                                    className={`flex items-center justify-between p-2 rounded cursor-pointer text-sm font-medium group transition-colors ${selectedRoleId === role.id ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
+                                                >
+                                                    <div className="flex items-center gap-2 truncate">
+                                                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: role.color }}></div>
+                                                        <span className="truncate">{role.name}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Role Details */}
+                                    <div className="flex-1 flex flex-col">
+                                        {selectedRoleId && activeServer.roles ? (
+                                            <>
+                                                <div className="mb-6 flex gap-1 bg-slate-800 p-1 rounded-lg w-fit">
+                                                    <button onClick={() => setRoleTab('DISPLAY')} className={`px-4 py-1.5 rounded text-xs font-bold transition-colors ${roleTab === 'DISPLAY' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Display</button>
+                                                    <button onClick={() => setRoleTab('PERMISSIONS')} className={`px-4 py-1.5 rounded text-xs font-bold transition-colors ${roleTab === 'PERMISSIONS' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Permissions</button>
+                                                    <button onClick={() => setRoleTab('MEMBERS')} className={`px-4 py-1.5 rounded text-xs font-bold transition-colors ${roleTab === 'MEMBERS' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Manage Members</button>
+                                                </div>
+
+                                                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                                                    {roleTab === 'DISPLAY' && (
+                                                        <div className="space-y-6 animate-fade-in">
+                                                            <div className="max-w-md space-y-4">
+                                                                <Input label="Role Name" value={activeServer.roles.find(r => r.id === selectedRoleId)?.name} />
+                                                                
+                                                                <div>
+                                                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Role Color</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-16 h-10 rounded border border-slate-700" style={{ backgroundColor: activeServer.roles.find(r => r.id === selectedRoleId)?.color }}></div>
+                                                                        <div className="flex-1 grid grid-cols-6 gap-2">
+                                                                            {['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#64748b'].map(color => (
+                                                                                <button key={color} className="w-6 h-6 rounded-full hover:scale-110 transition-transform ring-1 ring-white/10" style={{ backgroundColor: color }} />
+                                                                            ))}
+                                                                            <button className="w-6 h-6 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 hover:text-white"><Settings size={12}/></button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="h-px bg-slate-700 my-4" />
+
+                                                            <div className="space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div>
+                                                                        <div className="text-sm font-bold text-white">Display role members separately</div>
+                                                                        <div className="text-xs text-slate-500">Members will be grouped by this role in the member list.</div>
+                                                                    </div>
+                                                                    <Switch checked={activeServer.roles.find(r => r.id === selectedRoleId)?.isHoisted} />
+                                                                </div>
+                                                                <div className="flex items-center justify-between">
+                                                                    <div>
+                                                                        <div className="text-sm font-bold text-white">Allow anyone to @mention this role</div>
+                                                                        <div className="text-xs text-slate-500">Members can use @{activeServer.roles.find(r => r.id === selectedRoleId)?.name} to notify all members.</div>
+                                                                    </div>
+                                                                    <Switch checked={false} />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {roleTab === 'PERMISSIONS' && (
+                                                        <div className="space-y-8 animate-fade-in">
+                                                            <div className="relative">
+                                                                <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+                                                                <input className="w-full bg-slate-950 border border-slate-800 rounded px-10 py-2 text-sm text-slate-200 focus:outline-none focus:border-nexus-accent" placeholder="Search permissions..." />
+                                                            </div>
+                                                            
+                                                            {PERMISSION_GROUPS.map((group, idx) => (
+                                                                <div key={idx} className="space-y-4">
+                                                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-800 pb-1">{group.name}</h3>
+                                                                    {group.perms.map(perm => {
+                                                                       const role = activeServer.roles?.find(r => r.id === selectedRoleId);
+                                                                       const hasPerm = role?.permissions?.includes(perm.id) || role?.permissions?.includes('ADMINISTRATOR');
+                                                                       return (
+                                                                         <div key={perm.id} className="flex items-center justify-between py-1">
+                                                                             <div className="pr-4">
+                                                                                 <div className="text-sm font-bold text-slate-200">{perm.label}</div>
+                                                                                 <div className="text-xs text-slate-500">{perm.desc}</div>
+                                                                             </div>
+                                                                             <Switch checked={!!hasPerm} />
+                                                                         </div>
+                                                                       );
+                                                                    })}
+                                                                </div>
+                                                            ))}
+                                                            
+                                                            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between mt-8">
+                                                                <div>
+                                                                    <div className="text-sm font-bold text-red-400 flex items-center gap-2"><Shield size={14} /> Administrator</div>
+                                                                    <div className="text-xs text-red-300/70">Members with this permission have every permission and can bypass channel specific permissions.</div>
+                                                                </div>
+                                                                <Switch checked={activeServer.roles?.find(r => r.id === selectedRoleId)?.permissions?.includes('ADMINISTRATOR')} />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {roleTab === 'MEMBERS' && (
+                                                        <div className="animate-fade-in">
+                                                            <div className="flex items-center justify-between mb-4 bg-slate-800 p-3 rounded-lg">
+                                                                <div className="text-sm text-slate-300">
+                                                                    Members with this role: <span className="font-bold text-white">0</span>
+                                                                </div>
+                                                                <Button variant="secondary" className="text-xs h-8">Add Members</Button>
+                                                            </div>
+                                                            <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+                                                                <Users size={48} className="mb-4 opacity-20" />
+                                                                <p className="text-sm">No members assigned to this role yet.</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
                                         ) : (
-                                            <div className="flex flex-col items-center text-slate-500 group-hover:text-nexus-accent">
-                                                <ImageIcon size={32} className="mb-2" />
-                                                <span className="text-xs font-bold uppercase">Upload Banner</span>
+                                            <div className="flex items-center justify-center h-full text-slate-500">Select a role to edit</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {serverSettingsTab === 'EMOJIS' && (
+                                <div className="space-y-6 animate-fade-in h-full flex flex-col">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex gap-4">
+                                            <button 
+                                                onClick={() => setEmojiTab('EMOJI')}
+                                                className={`pb-2 text-sm font-bold transition-colors border-b-2 ${emojiTab === 'EMOJI' ? 'border-nexus-accent text-white' : 'border-transparent text-slate-400 hover:text-white'}`}
+                                            >
+                                                Emoji
+                                            </button>
+                                            <button 
+                                                onClick={() => setEmojiTab('STICKERS')}
+                                                className={`pb-2 text-sm font-bold transition-colors border-b-2 ${emojiTab === 'STICKERS' ? 'border-nexus-accent text-white' : 'border-transparent text-slate-400 hover:text-white'}`}
+                                            >
+                                                Stickers
+                                            </button>
+                                        </div>
+                                        <div className="text-xs font-mono text-slate-500">
+                                            Slots Used: <span className="text-white font-bold">{activeServer.emojis?.length || 0}</span> / 50
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-nexus-accent hover:bg-slate-800 transition-all group">
+                                        <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                            <Upload size={24} className="text-slate-400 group-hover:text-nexus-accent transition-colors" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-white">Upload {emojiTab === 'EMOJI' ? 'Emoji' : 'Sticker'}</h3>
+                                        <p className="text-xs text-slate-400 mt-1">256KB max size. JPG, PNG, GIF</p>
+                                    </div>
+                                    
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                        {emojiTab === 'EMOJI' ? (
+                                            <>
+                                                {(!activeServer.emojis || activeServer.emojis.length === 0) ? (
+                                                    <div className="flex flex-col items-center justify-center h-48 text-slate-500">
+                                                        <Smile size={32} className="mb-2 opacity-20" />
+                                                        <p className="text-sm">No custom emojis yet.</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                        {activeServer.emojis.map(emoji => (
+                                                            <div key={emoji.id} className="flex items-center gap-3 p-2 bg-slate-800/50 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-600 transition-all group">
+                                                                <img src={emoji.url} alt={emoji.name} className="w-8 h-8 object-contain" />
+                                                                <div className="min-w-0 flex-1">
+                                                                    <div className="text-xs font-bold text-white truncate">:{emoji.name}:</div>
+                                                                    <div className="text-[10px] text-slate-500 truncate">by {MOCK_USERS.find(u => u.id === emoji.creatorId)?.username || 'User'}</div>
+                                                                </div>
+                                                                <button className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1">
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-48 text-slate-500">
+                                                <div className="w-16 h-16 bg-slate-800/50 rounded-lg flex items-center justify-center mb-3">
+                                                    <ImageIcon size={32} className="opacity-20" />
+                                                </div>
+                                                <p className="text-sm mb-2">No stickers uploaded.</p>
+                                                <Button variant="secondary" className="text-xs">Browse Shop</Button>
                                             </div>
                                         )}
-                                        <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={handleServerBannerUpload} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {serverSettingsTab === 'AUDIT_LOG' && (
+                                <div className="space-y-4 animate-fade-in h-full flex flex-col">
+                                    <div className="flex flex-wrap gap-2 mb-2 p-3 bg-slate-900/50 rounded-lg border border-slate-800">
+                                        <div className="relative flex-1 min-w-[200px]">
+                                            <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
+                                            <input 
+                                                className="w-full bg-slate-950 border border-slate-700 rounded pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-nexus-accent" 
+                                                placeholder="Search logs..." 
+                                            />
+                                        </div>
+                                        <div className="relative w-40">
+                                            <select 
+                                                className="w-full bg-slate-950 border border-slate-700 rounded pl-2 pr-8 py-2 text-xs text-slate-300 focus:outline-none focus:border-nexus-accent appearance-none"
+                                                value={auditFilterUser}
+                                                onChange={(e) => setAuditFilterUser(e.target.value)}
+                                            >
+                                                <option value="">All Users</option>
+                                                <option value="1">Kaelthas</option>
+                                                <option value="Nexus AI">Nexus AI</option>
+                                            </select>
+                                            <ChevronDown size={14} className="absolute right-2 top-2.5 text-slate-500 pointer-events-none" />
+                                        </div>
+                                        <div className="relative w-40">
+                                             <select 
+                                                className="w-full bg-slate-950 border border-slate-700 rounded pl-2 pr-8 py-2 text-xs text-slate-300 focus:outline-none focus:border-nexus-accent appearance-none"
+                                                value={auditFilterAction}
+                                                onChange={(e) => setAuditFilterAction(e.target.value)}
+                                            >
+                                                <option value="">All Actions</option>
+                                                <option value="CREATE">Creation</option>
+                                                <option value="UPDATE">Updates</option>
+                                                <option value="DELETE">Deletions</option>
+                                            </select>
+                                            <ChevronDown size={14} className="absolute right-2 top-2.5 text-slate-500 pointer-events-none" />
+                                        </div>
                                     </div>
                                     
-                                    {/* Icon Overlay */}
-                                    <div className="absolute -bottom-6 left-6 w-20 h-20 rounded-full border-4 border-slate-800 bg-slate-700 z-10 shadow-xl overflow-hidden group/icon cursor-pointer" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
-                                        <img src={activeServer.icon} className="w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/icon:opacity-100 flex items-center justify-center transition-opacity">
-                                            <Camera size={20} className="text-white" />
-                                        </div>
-                                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleServerIconUpload} />
-                                    </div>
-                                </div>
-                                
-                                <div className="mt-8 grid grid-cols-2 gap-6">
-                                    <div className="col-span-2">
-                                        <Input label="Server Name" value={activeServer.name} onChange={(e: any) => handleUpdateServer({ name: e.target.value })} />
-                                    </div>
-                                    
-                                    <div>
-                                        <Select 
-                                            label="Region"
-                                            value={activeServer.region} 
-                                            onChange={(e: any) => handleUpdateServer({ region: e.target.value })}
-                                            options={[
-                                                { label: 'US East', value: 'US East' },
-                                                { label: 'US West', value: 'US West' },
-                                                { label: 'EU West', value: 'EU West' },
-                                                { label: 'Asia', value: 'Asia' },
-                                            ]}
-                                        />
-                                    </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pb-4">
+                                        {MOCK_AUDIT_LOGS.map(log => {
+                                            const isCreate = log.action.includes('CREATE') || log.action.includes('ADD');
+                                            const isDelete = log.action.includes('DELETE') || log.action.includes('REMOVE') || log.action.includes('BAN') || log.action.includes('KICK');
+                                            const colorClass = isCreate ? 'text-green-400 bg-green-500/10' : isDelete ? 'text-red-400 bg-red-500/10' : 'text-blue-400 bg-blue-500/10';
+                                            const Icon = isCreate ? Plus : isDelete ? Trash2 : FileText;
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Status</label>
-                                        <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-300">
-                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                            <span>Operational</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 space-y-4">
-                                    <h4 className="text-sm font-bold text-white flex items-center gap-2"><Settings size={14}/> Widget Settings</h4>
-                                    
-                                    <div>
-                                        <Select 
-                                            label="System Messages Channel"
-                                            value={activeServer.systemChannelId || ''} 
-                                            onChange={(e: any) => handleUpdateServer({ systemChannelId: e.target.value })}
-                                            options={[
-                                                { label: 'No System Messages', value: '' },
-                                                ...activeServer.channels.filter(c => c.type === 'TEXT').map(c => ({ label: `#${c.name}`, value: c.id }))
-                                            ]}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Select 
-                                            label="AFK Voice Channel"
-                                            value={activeServer.afkChannelId || ''} 
-                                            onChange={(e: any) => handleUpdateServer({ afkChannelId: e.target.value })}
-                                            options={[
-                                                { label: 'No AFK Channel', value: '' },
-                                                ...activeServer.channels.filter(c => c.type === 'VOICE').map(c => ({ label: `🔊 ${c.name}`, value: c.id }))
-                                            ]}
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center justify-between pt-2">
-                                        <div>
-                                            <div className="text-sm font-medium text-white">Default Notification Settings</div>
-                                            <div className="text-xs text-slate-500">All messages vs mentions only</div>
-                                        </div>
-                                        <Switch checked={true} onChange={() => {}} />
-                                    </div>
-                                </div>
-
-                                {/* Invite Link Widget */}
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Invite Link</label>
-                                    <div className="flex gap-2">
-                                        <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-nexus-glow font-mono flex items-center justify-between">
-                                            <span>nexus.gg/{activeServer.id.slice(0,8)}</span>
-                                            <button className="text-slate-500 hover:text-white" title="Copy"><Copy size={14}/></button>
-                                        </div>
-                                        <Button variant="secondary" className="text-xs">Regenerate</Button>
-                                    </div>
-                                </div>
-                             </div>
-                        )}
-
-                        {serverSettingsTab === 'ROLES' && (
-                             <div className="space-y-4 animate-fade-in">
-                                 <div className="flex justify-between items-center mb-4">
-                                     <p className="text-slate-400 text-sm">Use roles to group server members and assign permissions.</p>
-                                     <Button variant="primary" className="text-xs flex items-center gap-2"><Plus size={14} /> Create Role</Button>
-                                 </div>
-                                 <div className="space-y-2">
-                                     {activeServer.roles?.map(role => (
-                                         <div key={role.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700 hover:border-slate-500 transition-colors group cursor-pointer">
-                                             <div className="flex items-center gap-3">
-                                                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: role.color }}></div>
-                                                 <span className="font-bold text-white">{role.name}</span>
-                                             </div>
-                                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                 <button className="p-2 hover:bg-slate-700 rounded text-slate-400"><Settings size={14}/></button>
-                                                 <button className="p-2 hover:bg-red-500/10 rounded text-red-400"><Trash2 size={14}/></button>
-                                             </div>
-                                         </div>
-                                     ))}
-                                 </div>
-                             </div>
-                        )}
-
-                        {serverSettingsTab === 'EMOJIS' && (
-                            <div className="space-y-6 animate-fade-in">
-                                <div className="bg-slate-800/50 border border-dashed border-slate-700 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-nexus-accent hover:bg-slate-800 transition-all">
-                                    <Smile size={48} className="text-slate-500 mb-4" />
-                                    <h3 className="text-lg font-bold text-white">Upload Emoji</h3>
-                                    <p className="text-sm text-slate-400">Drag & drop or click to upload</p>
-                                    <div className="text-xs text-slate-500 mt-2">Recommended: 256x256, PNG or GIF</div>
-                                </div>
-                                
-                                <div>
-                                    <h3 className="font-bold text-white mb-4 uppercase text-xs tracking-wider text-slate-500">Server Emojis ({activeServer.emojis?.length || 0})</h3>
-                                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
-                                        {activeServer.emojis?.map(emoji => (
-                                            <div key={emoji.id} className="aspect-square bg-slate-800 rounded-lg flex items-center justify-center relative group">
-                                                <img src={emoji.url} alt={emoji.name} className="w-10 h-10 object-contain" />
-                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-lg transition-opacity gap-2">
-                                                    <button className="text-white hover:text-red-400"><Trash2 size={16}/></button>
+                                            return (
+                                                <div key={log.id} className="flex items-start gap-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 hover:bg-slate-800 transition-colors group">
+                                                     <div className={`p-2 rounded-full mt-1 flex-shrink-0 ${colorClass}`}>
+                                                         <Icon size={14} />
+                                                     </div>
+                                                     <div className="flex-1 min-w-0">
+                                                         <div className="flex items-center gap-2 mb-1">
+                                                             <span className="font-bold text-nexus-accent text-sm hover:underline cursor-pointer">
+                                                                {MOCK_USERS.find(u => u.id === log.userId)?.username || log.userId}
+                                                             </span>
+                                                             <span className="text-xs text-slate-400">
+                                                                {log.action.replace(/_/g, ' ').toLowerCase()}
+                                                             </span>
+                                                             <span className="font-bold text-white text-sm">
+                                                                {log.targetType?.toLowerCase()}
+                                                             </span>
+                                                         </div>
+                                                         {log.details && (
+                                                             <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded border border-slate-800 font-mono">
+                                                                 {log.details}
+                                                             </div>
+                                                         )}
+                                                     </div>
+                                                     <div className="flex flex-col items-end gap-1">
+                                                         <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1">
+                                                             <Clock size={10} />
+                                                             {log.timestamp.toLocaleDateString()}
+                                                         </div>
+                                                         <div className="text-[10px] text-slate-600">ID: {log.id}</div>
+                                                     </div>
                                                 </div>
-                                                <div className="absolute bottom-1 text-[10px] text-slate-400 font-mono opacity-0 group-hover:opacity-100">:{emoji.name}:</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {serverSettingsTab === 'AUDIT_LOG' && (
-                            <div className="space-y-4 animate-fade-in">
-                                <div className="flex gap-4 mb-4">
-                                    <div className="relative flex-1">
-                                        <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
-                                        <input className="w-full bg-slate-800 border border-slate-700 rounded pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-nexus-accent" placeholder="Search user, action..." />
-                                    </div>
-                                    <button className="px-4 py-2 bg-slate-800 border border-slate-700 rounded text-sm text-white hover:bg-slate-700">Filter</button>
-                                </div>
-                                <div className="space-y-2">
-                                    {MOCK_AUDIT_LOGS.map(log => (
-                                        <div key={log.id} className="flex items-center gap-4 p-3 bg-slate-800/50 rounded border-l-4 border-nexus-accent hover:bg-slate-800 transition-colors">
-                                             <div className="p-2 bg-slate-700 rounded-full text-slate-300">
-                                                 <Activity size={16} />
-                                             </div>
-                                             <div className="flex-1">
-                                                 <div className="text-sm text-white">
-                                                     <span className="font-bold text-nexus-accent">{log.userId === '1' ? 'Kaelthas' : log.userId}</span> {log.action.replace('_', ' ').toLowerCase()} <span className="font-bold">{log.targetType?.toLowerCase()}</span>
-                                                 </div>
-                                                 <div className="text-xs text-slate-500">{log.details}</div>
-                                             </div>
-                                             <div className="text-xs text-slate-500 font-mono">
-                                                 {log.timestamp.toLocaleDateString()}
-                                             </div>
+                                            );
+                                        })}
+                                        <div className="text-center pt-4">
+                                            <Button variant="ghost" className="text-xs text-slate-500"><Download size={14} className="mr-2"/> Export Logs</Button>
                                         </div>
-                                    ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
+                        </div>
                     </div>
                 </div>
             </Modal>
