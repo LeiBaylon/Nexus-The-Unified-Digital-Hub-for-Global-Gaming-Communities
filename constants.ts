@@ -141,15 +141,15 @@ export const MUSIC_TRACKS: MusicTrack[] = [
 ];
 
 export const SOUND_EFFECTS: SoundEffect[] = [
-  { id: 's1', label: 'Airhorn', icon: Zap, color: 'text-yellow-400', src: 'https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3' },
-  { id: 's2', label: 'GG WP', icon: Crown, color: 'text-green-400', src: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3' },
-  { id: 's3', label: 'Oof', icon: Skull, color: 'text-red-400', src: 'https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3' },
-  { id: 's4', label: 'Level Up', icon: Trophy, color: 'text-nexus-accent', src: 'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3' },
+  { id: 's1', label: 'Zap', icon: Zap, color: 'text-yellow-400', src: 'https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/missile.mp3' },
+  { id: 's2', label: 'Ping', icon: Crown, color: 'text-green-400', src: 'https://codeskulptor-demos.commondatastorage.googleapis.com/galaxy/note.mp3' },
+  { id: 's3', label: 'Boom', icon: Skull, color: 'text-red-400', src: 'https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/explosion.mp3' },
+  { id: 's4', label: 'Level Up', icon: Trophy, color: 'text-nexus-accent', src: 'https://commondatastorage.googleapis.com/codeskulptor-assets/powup.mp3' },
 ];
 
 export const NOTIFICATION_SOUNDS = {
-  MESSAGE: 'https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3', // Simple pop
-  MENTION: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'  // Distinct chime
+  MESSAGE: 'https://commondatastorage.googleapis.com/codeskulptor-assets/week7-button.m4a', // Simple pop
+  MENTION: 'https://codeskulptor-demos.commondatastorage.googleapis.com/galaxy/note.mp3'  // Distinct chime
 };
 
 export const LOOT_ITEMS: InventoryItem[] = [

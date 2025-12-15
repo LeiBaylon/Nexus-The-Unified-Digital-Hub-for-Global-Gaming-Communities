@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Message, User, Channel, SoundEffect } from '../types';
 import { Avatar, Button, Badge, EmojiPicker, ContextMenu, Modal, ConfirmModal, Input, RadioCard } from './UIComponents';
@@ -376,7 +377,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ channel, messages,
   // Interactive Handlers
   const handleAcceptGift = (gift: {title: string, icon: string}) => {
      setClaimedGift(gift);
-     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'); // Reuse Level Up sound
+     const audio = new Audio('https://commondatastorage.googleapis.com/codeskulptor-assets/powup.mp3'); // Reuse Level Up sound
      audio.volume = 0.5;
      audio.play().catch(() => {});
   };
